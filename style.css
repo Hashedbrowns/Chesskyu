@@ -1,0 +1,14 @@
+#site-title {
+    color: #8FBCBB;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 200;
+    margin: 0.25em 0.25em;
+}
+
+#site-title span {
+    color: white;
+}
+
+body {
+    background-color: #2E3440;
+}
