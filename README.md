@@ -1,4 +1,4 @@
 # chesskyu
 Website to play chess
 <br>
-TODO: Make board 
+TODO: Add promotion
