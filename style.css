@@ -12,3 +12,20 @@
 body {
     background-color: #2E3440;
 }
+
+.board {
+    margin: 1em 35em;
+    display: grid;
+    grid-template-columns: repeat(8,1fr);
+    gap: 0px;
+}
+
+.white-square {
+    aspect-ratio: 1;
+    background-color: #B5B5B5;
+}
+
+.black-square {
+    aspect-ratio: 1;
+    background-color: #71828F; 
+}
