@@ -22,41 +22,46 @@ for (let row = 7; row >= 0; row--) {
 
 let dragged;
 
+/* events fired on the draggable target */
+board.addEventListener("drag", function(event) {
 
-document.addEventListener("dragstart", function(event) {
+}, false);
+
+board.addEventListener("dragstart", function(event) {
   // store a ref. on the dragged elem
   dragged = event.target;
   // make it half transparent
   event.target.style.opacity = .5;
 }, false);
 
-document.addEventListener("dragend", function(event) {
+board.addEventListener("dragend", function(event) {
   // reset the transparency
   event.target.style.opacity = "";
 }, false);
 
 /* events fired on the drop targets */
-document.addEventListener("dragover", function(event) {
+board.addEventListener("dragover", function(event) {
   // prevent default to allow drop
   event.preventDefault();
 }, false);
 
-document.addEventListener("dragenter", function(event) {
+board.addEventListener("dragenter", function(event) {
   // highlight potential drop target when the draggable element enters it
   if (event.target.className === "white-square" || event.target.className === "black-square" || event.target.getAttribute("draggable") === "true") {
-    event.target.style.border = "medium solid white";
+    if (!(event.target === dragged)) {
+        event.target.style.border = "medium solid white";
+    }
   }
 }, false);
 
-document.addEventListener("dragleave", function(event) {
+board.addEventListener("dragleave", function(event) {
   // reset background of potential drop target when the draggable element leaves it
   if (event.target.className === "white-square" || event.target.className === "black-square" || event.target.getAttribute("draggable") === "true") {
     event.target.style.border = "";
   }
 }, false);
 
-document.addEventListener("drop", function(event) {
-  // prevent default action (open as link for some elements)
+board.addEventListener("drop", function(event) {
   if (event.target.getAttribute("draggable") === "true") {
       onDrop(dragged,event.target.parentNode)
   }
