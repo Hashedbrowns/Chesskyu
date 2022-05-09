@@ -18,6 +18,11 @@ body {
 	display: grid;
 	grid-template-columns: repeat(8, 1fr);
 	gap: 0px;
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
 }
 
 .white-square {
