@@ -2,7 +2,7 @@
 	color: #8fbcbb;
 	font-family: "Poppins", sans-serif;
 	font-weight: 200;
-	margin: 0.25em 0.25em;
+	margin: auto;
 }
 
 #site-title span {
@@ -14,10 +14,10 @@ body {
 }
 
 .board {
-	margin: 1em 35em;
+	margin: auto;
+	max-width: 800px;
 	display: grid;
 	grid-template-columns: repeat(8, 1fr);
-	gap: 0px;
     /* stops dragging of elements other than images */
     -webkit-user-drag: none;
     user-select: none;
@@ -37,3 +37,45 @@ body {
 	aspect-ratio: 1;
 	background-color: #71828f;
 }
+
+/* The Modal (background) */
+.white-modal, 
+.black-modal {
+	display: none; /* Hidden by default */
+	position: absolute; /* Stay in place */
+	max-width: 100px;
+	z-index: 1; /* Sit on top */
+	width: 10em; /* Full width */
+	height: 25em; /* Full height */
+	border-radius: 25px;
+	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+} 
+  /* Modal Content/Box */
+  .white-content,
+  .black-content {
+	background-color: #fefefe;
+	display: flex;
+	grid-template-rows: repeat(4, 1fr);
+	aspect-ratio: 1;
+  }
+
+  .white-content:hover,
+  .black-content:hover {
+	  cursor: pointer;
+	  background-color: grey;
+  }
+
+  /* The Close Button */
+  .close {
+	color: rgb(170, 170, 170);
+	float: right;
+	font-size: 28px;
+	font-weight: bold;
+  }
+  
+  .close:hover,
+  .close:focus {
+	color: black;
+	text-decoration: none;
+	cursor: pointer;
+  }

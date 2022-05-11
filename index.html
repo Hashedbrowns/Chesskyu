@@ -29,7 +29,7 @@
 			<h1 id="site-title">chess<span>kyu</span></h1>
 		</header>
 		<main>
-			<div class="board" draggable = "false">
+			<div class="board" draggable="false">
 				<div class="white-square" id="a8"></div>
 				<div class="black-square" id="b8"></div>
 				<div class="white-square" id="c8"></div>
@@ -95,6 +95,40 @@
 				<div class="black-square" id="g1"></div>
 				<div class="white-square" id="h1"></div>
 			</div>
+			<!-- Experimental modal-->
+			<div id = "white-promotion" class="white-modal">
+				<!-- Modal content -->
+				<div class="white-content">
+					<img src="pieces/wq.svg" /> 
+				</div>
+				<div class="white-content">
+					<img src="pieces/wr.svg" />
+				</div>
+				<div class="white-content">
+					<img src="pieces/wb.svg" />
+				</div>
+				<div class="white-content">
+					<img src="pieces/wn.svg" />
+				</div>
+					<!-- <span class="close">&times;</span> -->
+			</div>
+			<div id = "black-promotion" class="black-modal">
+				<!-- Modal content -->
+				<div class="black-content">
+					<img src="pieces/bn.svg" />
+				</div>
+				<div class="black-content">
+					<img src="pieces/bb.svg" />
+				</div>
+				<div class="black-content">
+					<img src="pieces/br.svg" />
+				</div>
+				<div class="black-content">
+					<img src="pieces/bq.svg" />
+				</div>
+					<!-- <span class="close">&times;</span> -->
+			</div>
+
 			<script src="main.js"></script>
 		</main>
 	</body>
