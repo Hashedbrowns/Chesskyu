@@ -6,6 +6,7 @@ let img
 let piece
 let coordinates
 
+// populate board for inital position
 for (let row = 7; row >= 0; row--) {
 	for (let column = 0; column < 8; column++) {
 		if (boardRepr[row][column]) {
@@ -23,6 +24,11 @@ for (let row = 7; row >= 0; row--) {
 }
 
 let dragged
+let whiteModal = document.querySelector("#white-promotion")
+let blackModal = document.querySelector("#black-promotion")
+let whiteContent = document.querySelector(".white-content")
+let blackContent = document.querySelector(".black-content")
+let promotionPromise
 
 /* events fired on the draggable target */
 board.addEventListener("drag", function (event) {}, false)
@@ -112,29 +118,119 @@ function onDrop(dragTarget, dropTarget) {
 	let dragPiece = `${dragTarget.src[dragTarget.src.length - 6]}${
 		dragTarget.src[dragTarget.src.length - 5]
 	}`
-	if (chess.move(moveObject)) {
-		onMove(dragTarget,dropTarget)
+	let chessMove = chess.move(moveObject)
+	if (chessMove) {
+		if (chessMove.flags === "e") {
+			// if en passant
+			onEnPassant(dragTarget, dropTarget, dragPiece)
+		} else {
+			onMove(dragTarget, dropTarget)
+		}
 	} else if (
+		// check if move is pawn promotion
 		(dragPiece === "bp" && dropTarget.id[1] === "1") ||
 		(dragPiece === "wp" && dropTarget.id[1] === "8")
 	) {
-        /* TODO: Make interface for promotion choice */
-        moveObject.promotion = "q"
-		if (chess.move(moveObject)) {
-            if (dragPiece[0] === "b") {
-                dragTarget.src = "pieces/bq.svg"
-            } else {
-                dragTarget.src = "pieces/wq.svg"
-            }
-			onMove(dragTarget,dropTarget)
+		/* TODO: Make interface for promotion choice */
+		if (
+			chess
+				.moves({ square: dragTarget.parentNode.id })
+				.find((item) => item.includes(`${dropTarget.id}`))
+		) {
+			promotionPromise = new Promise(function (resolve, reject) {
+				if (onPromotion(dragPiece[0], dropTarget.id) === "w") {
+					// if white promote
+					whiteModalClone.addEventListener(
+						"click",
+						(event) => {
+							// obtain promotion piece from click
+							moveObject.promotion =
+								event.target.src[event.target.src.length - 5]
+							// remove promotion menu
+							whiteModalClone.parentNode.removeChild(
+								whiteModalClone
+							)
+							resolve()
+						},
+						(once = true)
+					)
+				} else {
+					// if black promote
+					blackModalClone.addEventListener(
+						"click",
+						(event) => {
+							// obtain promotion piece from click
+							moveObject.promotion =
+								event.target.src[event.target.src.length - 5]
+							// remove promotion menu
+							blackModalClone.parentNode.removeChild(
+								blackModalClone
+							)
+							resolve()
+						},
+						(once = true)
+					)
+				}
+			})
+			promotionPromise.then(() => {
+				// perform promotion
+				chess.move(moveObject)
+				dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
+				onMove(dragTarget, dropTarget)
+			})
 		}
 	}
 }
 
-function onMove(dragTarget,dropTarget) {
-    if (dropTarget.firstChild) {
-        dropTarget.removeChild(dropTarget.firstChild)
-    }
-    dragTarget.parentNode.removeChild(dragTarget)
-    dropTarget.appendChild(dragTarget)
+function onMove(dragTarget, dropTarget) {
+	// change dropTarget piece to dragTarget piece
+	if (dropTarget.firstChild) {
+		dropTarget.removeChild(dropTarget.firstChild)
+	}
+	dragTarget.parentNode.removeChild(dragTarget)
+	dropTarget.appendChild(dragTarget)
 }
+
+function onEnPassant(dragTarget, dropTarget, dragPiece) {
+	// check color
+	if (dragPiece[0] === "w") {
+		targetPawn = `#${dropTarget.id[0]}${Number(dropTarget.id[1]) - 1}`
+	} else {
+		targetPawn = `#${dropTarget.id[0]}${Number(dropTarget.id[1]) + 1}`
+	}
+	// remove target pawn and move dragged pawn
+	targetPawn = document.querySelector(targetPawn)
+	targetPawn.removeChild(targetPawn.firstChild)
+	dropTarget.appendChild(dragTarget)
+}
+
+function onPromotion(pieceColor, dropTarget) {
+	// open promotion interface based on color
+	if (pieceColor === "w") {
+		whiteModalClone = whiteModal.cloneNode((deep = true))
+		whiteModalClone.style.display = "grid"
+		square = document.querySelector(`#${dropTarget}`)
+		square.appendChild(whiteModalClone)
+
+		return "w"
+	} else {
+		blackModalClone = blackModal.cloneNode((deep = true))
+		blackModalClone.style.display = "grid"
+		dropTarget = `${dropTarget[0]}${Number(dropTarget[1]) + 3}`
+		square = document.querySelector(`#${dropTarget}`)
+		square.appendChild(blackModalClone)
+		return "b"
+	}
+}
+
+// Un-comment after adding redo
+/* var span = document.querySelector(".close");
+
+// When the user clicks on <span> (x), close the modal
+span.addEventListener("click", () => modal.style.display = "none")
+   // When the user clicks anywhere outside of the modal, close it 
+window.onclick = function(event) {
+	if (event.target == modal) {
+	  modal.style.display = "none";
+	}
+  } */
