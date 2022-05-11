@@ -123,6 +123,8 @@ function onDrop(dragTarget, dropTarget) {
 		if (chessMove.flags === "e") {
 			// if en passant
 			onEnPassant(dragTarget, dropTarget, dragPiece)
+		} else if (chessMove.flags === "k" || chessMove.flags === "q"){
+			onCastle(dragTarget,dropTarget,dragPiece,chessMove.flags)
 		} else {
 			onMove(dragTarget, dropTarget)
 		}
@@ -201,6 +203,36 @@ function onEnPassant(dragTarget, dropTarget, dragPiece) {
 	// remove target pawn and move dragged pawn
 	targetPawn = document.querySelector(targetPawn)
 	targetPawn.removeChild(targetPawn.firstChild)
+	dropTarget.appendChild(dragTarget)
+}
+
+function onCastle(dragTarget,dropTarget,dragPiece,flag) {
+	if (dragPiece[0] === "w") {
+		// castle for white
+		if (flag === "k") {
+			// castle for king side
+			rookInitSquare = document.querySelector("#h1")
+			rookFinalSquare = document.querySelector("#f1")
+		} else {
+			// castle for queen side
+			rookInitSquare = document.querySelector("#a1")
+			rookFinalSquare = document.querySelector("#d1")
+		}
+	} else {
+		// castle for black
+		if (flag === "k") {
+			// castle for king side
+			rookInitSquare = document.querySelector("#h8")
+			rookFinalSquare = document.querySelector("#f8")
+		} else {
+			// castle for queen side
+			rookInitSquare = document.querySelector("#a8")
+			rookFinalSquare = document.querySelector("#d8")	
+		}
+	}
+	rook = rookInitSquare.firstChild
+	rookInitSquare.removeChild(rook)
+	rookFinalSquare.appendChild(rook)
 	dropTarget.appendChild(dragTarget)
 }
 
