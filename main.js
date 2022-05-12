@@ -1,10 +1,11 @@
+// redo move if player clicks away during promotion
 const chess = new Chess()
 
-let boardRepr = chess.board()
+const boardRepr = chess.board()
 const board = document.querySelector(".board")
 let img
 let piece
-let coordinates
+let coordinates 
 
 // populate board for inital position
 for (let row = 7; row >= 0; row--) {
@@ -24,12 +25,8 @@ for (let row = 7; row >= 0; row--) {
 }
 
 let dragged
-let whiteModal = document.querySelector("#white-promotion")
-let blackModal = document.querySelector("#black-promotion")
-let whiteContent = document.querySelector(".white-content")
-let blackContent = document.querySelector(".black-content")
-let promotionPromise
-
+let possibleMoves
+let possibleSquare
 /* events fired on the draggable target */
 board.addEventListener("drag", function (event) {}, false)
 
@@ -40,6 +37,7 @@ board.addEventListener(
 		dragged = event.target
 		// make it half transparent
 		event.target.style.opacity = 0.5
+		possibleMoves = chess.moves({square: dragged.parentNode.id})
 	},
 	false
 )
@@ -113,6 +111,11 @@ board.addEventListener(
 	false
 )
 
+const whiteModal = document.querySelector("#white-promotion")
+const blackModal = document.querySelector("#black-promotion")
+const whiteContent = document.querySelector(".white-content")
+const blackContent = document.querySelector(".black-content")
+
 function onDrop(dragTarget, dropTarget) {
 	let moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
 	let dragPiece = `${dragTarget.src[dragTarget.src.length - 6]}${
@@ -123,6 +126,8 @@ function onDrop(dragTarget, dropTarget) {
 		if (chessMove.flags === "e") {
 			// if en passant
 			onEnPassant(dragTarget, dropTarget, dragPiece)
+		} else if (chessMove.flags === "k" || chessMove.flags === "q"){
+			onCastle(dragTarget,dropTarget,dragPiece,chessMove.flags)
 		} else {
 			onMove(dragTarget, dropTarget)
 		}
@@ -143,14 +148,21 @@ function onDrop(dragTarget, dropTarget) {
 					whiteModalClone.addEventListener(
 						"click",
 						(event) => {
-							// obtain promotion piece from click
-							moveObject.promotion =
+							document.addEventListener("click", () => reject)
+							if (event.target.getAttribute("class") === "close") {
+								whiteModalClone.parentNode.removeChild(
+									whiteModalClone
+								)
+							} else {
+								// obtain promotion piece from click
+								moveObject.promotion =
 								event.target.src[event.target.src.length - 5]
-							// remove promotion menu
-							whiteModalClone.parentNode.removeChild(
-								whiteModalClone
-							)
-							resolve()
+								// remove promotion menu
+								whiteModalClone.parentNode.removeChild(
+									whiteModalClone
+								)
+								resolve()
+							}
 						},
 						(once = true)
 					)
@@ -159,14 +171,20 @@ function onDrop(dragTarget, dropTarget) {
 					blackModalClone.addEventListener(
 						"click",
 						(event) => {
-							// obtain promotion piece from click
-							moveObject.promotion =
-								event.target.src[event.target.src.length - 5]
-							// remove promotion menu
-							blackModalClone.parentNode.removeChild(
-								blackModalClone
-							)
-							resolve()
+							if (event.target.getAttribute("class") === "close") {
+								blackModalClone.parentNode.removeChild(
+									blackModalClone
+								)
+							} else {
+								// obtain promotion piece from click
+								moveObject.promotion =
+									event.target.src[event.target.src.length - 5]
+								// remove promotion menu
+								blackModalClone.parentNode.removeChild(
+									blackModalClone
+								)
+								resolve()
+							}
 						},
 						(once = true)
 					)
@@ -201,6 +219,36 @@ function onEnPassant(dragTarget, dropTarget, dragPiece) {
 	// remove target pawn and move dragged pawn
 	targetPawn = document.querySelector(targetPawn)
 	targetPawn.removeChild(targetPawn.firstChild)
+	dropTarget.appendChild(dragTarget)
+}
+
+function onCastle(dragTarget,dropTarget,dragPiece,flag) {
+	if (dragPiece[0] === "w") {
+		// castle for white
+		if (flag === "k") {
+			// castle for king side
+			rookInitSquare = document.querySelector("#h1")
+			rookFinalSquare = document.querySelector("#f1")
+		} else {
+			// castle for queen side
+			rookInitSquare = document.querySelector("#a1")
+			rookFinalSquare = document.querySelector("#d1")
+		}
+	} else {
+		// castle for black
+		if (flag === "k") {
+			// castle for king side
+			rookInitSquare = document.querySelector("#h8")
+			rookFinalSquare = document.querySelector("#f8")
+		} else {
+			// castle for queen side
+			rookInitSquare = document.querySelector("#a8")
+			rookFinalSquare = document.querySelector("#d8")	
+		}
+	}
+	rook = rookInitSquare.firstChild
+	rookInitSquare.removeChild(rook)
+	rookFinalSquare.appendChild(rook)
 	dropTarget.appendChild(dragTarget)
 }
 
