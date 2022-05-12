@@ -30,26 +30,37 @@ body {
 	display: flex;
 	aspect-ratio: 1;
 	background-color: #b5b5b5;
+	position: relative;
 }
 
 .black-square {
 	display: flex;
 	aspect-ratio: 1;
 	background-color: #71828f;
+	position: relative;
 }
 
 /* The Modal (background) */
-.white-modal, 
+.white-modal {
+	display: none; /* Hidden by default */
+	position: absolute; /* Stay in place */
+	z-index: 1; /* Sit on top */
+	width: 100%; /* Full width */
+	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+} 
+
 .black-modal {
 	display: none; /* Hidden by default */
 	position: absolute; /* Stay in place */
-	max-width: 100px;
+	top: -33px;
 	z-index: 1; /* Sit on top */
-	width: 10em; /* Full width */
-	height: 25em; /* Full height */
-	border-radius: 25px;
+	width: 100%; /* Full width */
 	box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-} 
+}
+.all-black-content {
+	position: relative;
+	top: -33px;
+}
   /* Modal Content/Box */
   .white-content,
   .black-content {
@@ -68,8 +79,9 @@ body {
   /* The Close Button */
   .close {
 	color: rgb(170, 170, 170);
-	float: right;
+	background-color: #fefefe;
 	font-size: 28px;
+	text-align: center;
 	font-weight: bold;
   }
   
@@ -78,4 +90,14 @@ body {
 	color: black;
 	text-decoration: none;
 	cursor: pointer;
+  }
+
+  .possible-move {
+	  height: auto;
+	  width: auto;
+	  border-radius: 50%;
+	  width: 50px;
+	  height: 50px;
+	  background-color: #81A1C1;
+
   }
