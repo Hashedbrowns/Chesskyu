@@ -5,7 +5,7 @@ const boardRepr = chess.board()
 const board = document.querySelector(".board")
 let img
 let piece
-let coordinates 
+let coordinates
 
 // populate board for inital position
 for (let row = 7; row >= 0; row--) {
@@ -37,7 +37,7 @@ board.addEventListener(
 		dragged = event.target
 		// make it half transparent
 		event.target.style.opacity = 0.5
-		possibleMoves = chess.moves({square: dragged.parentNode.id})
+		possibleMoves = chess.moves({ square: dragged.parentNode.id })
 	},
 	false
 )
@@ -126,8 +126,8 @@ function onDrop(dragTarget, dropTarget) {
 		if (chessMove.flags === "e") {
 			// if en passant
 			onEnPassant(dragTarget, dropTarget, dragPiece)
-		} else if (chessMove.flags === "k" || chessMove.flags === "q"){
-			onCastle(dragTarget,dropTarget,dragPiece,chessMove.flags)
+		} else if (chessMove.flags === "k" || chessMove.flags === "q") {
+			onCastle(dragTarget, dropTarget, dragPiece, chessMove.flags)
 		} else {
 			onMove(dragTarget, dropTarget)
 		}
@@ -142,60 +142,16 @@ function onDrop(dragTarget, dropTarget) {
 				.moves({ square: dragTarget.parentNode.id })
 				.find((item) => item.includes(`${dropTarget.id}`))
 		) {
-			promotionPromise = new Promise(function (resolve, reject) {
-				if (onPromotion(dragPiece[0], dropTarget.id) === "w") {
-					// if white promote
-					whiteModalClone.addEventListener(
-						"click",
-						(event) => {
-							document.addEventListener("click", () => reject)
-							if (event.target.getAttribute("class") === "close") {
-								whiteModalClone.parentNode.removeChild(
-									whiteModalClone
-								)
-							} else {
-								// obtain promotion piece from click
-								moveObject.promotion =
-								event.target.src[event.target.src.length - 5]
-								// remove promotion menu
-								whiteModalClone.parentNode.removeChild(
-									whiteModalClone
-								)
-								resolve()
-							}
-						},
-						(once = true)
-					)
-				} else {
-					// if black promote
-					blackModalClone.addEventListener(
-						"click",
-						(event) => {
-							if (event.target.getAttribute("class") === "close") {
-								blackModalClone.parentNode.removeChild(
-									blackModalClone
-								)
-							} else {
-								// obtain promotion piece from click
-								moveObject.promotion =
-									event.target.src[event.target.src.length - 5]
-								// remove promotion menu
-								blackModalClone.parentNode.removeChild(
-									blackModalClone
-								)
-								resolve()
-							}
-						},
-						(once = true)
-					)
-				}
+			color = onPromotion(dragPiece[0], dropTarget.id)
+			promotionMenuRef = (event) => promotionMenu(event,dragTarget,dropTarget,dragPiece)
+			board.addEventListener("dragstart", promotionDrag, {
+				once: true,
 			})
-			promotionPromise.then(() => {
-				// perform promotion
-				chess.move(moveObject)
-				dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
-				onMove(dragTarget, dropTarget)
-			})
+			document.addEventListener(
+				"click",
+				promotionMenuRef,
+				{ once: true },
+			)
 		}
 	}
 }
@@ -222,7 +178,7 @@ function onEnPassant(dragTarget, dropTarget, dragPiece) {
 	dropTarget.appendChild(dragTarget)
 }
 
-function onCastle(dragTarget,dropTarget,dragPiece,flag) {
+function onCastle(dragTarget, dropTarget, dragPiece, flag) {
 	if (dragPiece[0] === "w") {
 		// castle for white
 		if (flag === "k") {
@@ -243,7 +199,7 @@ function onCastle(dragTarget,dropTarget,dragPiece,flag) {
 		} else {
 			// castle for queen side
 			rookInitSquare = document.querySelector("#a8")
-			rookFinalSquare = document.querySelector("#d8")	
+			rookFinalSquare = document.querySelector("#d8")
 		}
 	}
 	rook = rookInitSquare.firstChild
@@ -271,14 +227,45 @@ function onPromotion(pieceColor, dropTarget) {
 	}
 }
 
-// Un-comment after adding redo
-/* var span = document.querySelector(".close");
-
-// When the user clicks on <span> (x), close the modal
-span.addEventListener("click", () => modal.style.display = "none")
-   // When the user clicks anywhere outside of the modal, close it 
-window.onclick = function(event) {
-	if (event.target == modal) {
-	  modal.style.display = "none";
+function promotionMenu(event,dragTarget,dropTarget,dragPiece) {
+	moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
+	board.removeEventListener("dragstart", promotionDrag)
+	// if white promote
+	if (color === "w") {
+		// remove promotion menu
+		whiteModalClone.parentNode.removeChild(whiteModalClone)
+		if (
+			event.target.parentNode.className === "white-content" &&
+			event.target.className !== "close"
+		) {
+			// obtain promotion piece from click
+			moveObject.promotion = event.target.src[event.target.src.length - 5]
+			chess.move(moveObject)
+			dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
+			onMove(dragTarget, dropTarget)
+		}
+		// if black promote
+	} else {
+		// remove promotion menu
+		blackModalClone.parentNode.removeChild(blackModalClone)
+		if (
+			event.target.parentNode.className === "black-content" &&
+			event.target.className !== "close"
+		) {
+			// obtain promotion piece from click
+			moveObject.promotion = event.target.src[event.target.src.length - 5]
+			chess.move(moveObject)
+			dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
+			onMove(dragTarget, dropTarget)
+		}
 	}
-  } */
+}
+function promotionDrag() {
+	document.removeEventListener("click", promotionMenuRef)
+	if (color === "w") {
+		// remove promotion menu
+		whiteModalClone.parentNode.removeChild(whiteModalClone)
+	} else {
+		blackModalClone.parentNode.removeChild(blackModalClone)
+	}
+}
