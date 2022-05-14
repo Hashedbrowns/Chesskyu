@@ -1,3 +1,4 @@
+//TODO: when dragging after click remove highlight on clicked square
 // redo move if player clicks away during promotion
 const chess = new Chess()
 const board = document.querySelector(".board")
@@ -30,6 +31,7 @@ function populateBoard() {
 let dragged
 let dragPiece
 let promotionMenuRef
+let squareChanged = false
 /* events fired on the draggable target */
 board.addEventListener(
 	"drag",
@@ -42,8 +44,24 @@ board.addEventListener(
 board.addEventListener(
 	"dragstart",
 	function (event) {
+		if (clickedSquare) {
+			if (clickedSquare.parentNode.className === "last-move-white") {
+				clickedSquare.parentNode.setAttribute("class", "white-square")
+			} else {
+				clickedSquare.parentNode.setAttribute("class", "black-square")
+			}
+			clickedSquare = null
+			squareChanged = false
+		}
 		// store a ref. on the dragged elem
 		dragged = event.target
+		if (dragged.parentNode.className === "white-square") {
+			dragged.parentNode.setAttribute("class", "last-move-white")
+			squareChanged = true
+		} else if (dragged.parentNode.className === "black-square") {
+			dragged.parentNode.setAttribute("class", "last-move-black")
+			squareChanged = true
+		}
 		// make it half transparent
 		event.target.style.opacity = 0.5
 		possibleMoves = chess.moves({ square: dragged.parentNode.id })
@@ -111,11 +129,19 @@ board.addEventListener(
 board.addEventListener(
 	"drop",
 	function (event) {
+		if (squareChanged) {
+			if (dragged.parentNode.className === "last-move-white") {
+				dragged.parentNode.setAttribute("class", "white-square")
+			} else {
+				dragged.parentNode.setAttribute("class", "black-square")
+			}
+			squareChanged = false
+		}
+		
+		// move dragged elem to the selected drop target
 		if (event.target.getAttribute("draggable") === "true") {
 			onDrop(dragged, event.target.parentNode)
-		}
-		// move dragged elem to the selected drop target
-		if (
+		} else if (
 			event.target.className === "white-square" ||
 			event.target.className === "black-square" ||
 			event.target.className === "last-move-white" ||
@@ -170,7 +196,7 @@ function onDrop(dragTarget, dropTarget) {
 
 function onMove(dragTarget, dropTarget) {
 	squareDefault()
-	lastMove(dragTarget.parentNode,dropTarget)
+	lastMove(dragTarget.parentNode, dropTarget)
 	// change dropTarget piece to dragTarget piece
 	if (dropTarget.firstChild) {
 		dropTarget.removeChild(dropTarget.firstChild)
@@ -199,7 +225,7 @@ function onCastle(dragTarget, dropTarget, flag) {
 	let rookInitSquare
 	let rookFinalSquare
 	squareDefault()
-	lastMove(dragTarget.parentNode,dropTarget)
+	lastMove(dragTarget.parentNode, dropTarget)
 	if (dragPiece[0] === "w") {
 		// castle for white
 		if (flag === "k") {
@@ -292,10 +318,10 @@ function promotionDrag() {
 function squareDefault() {
 	let lastMoveWhite = document.getElementsByClassName("last-move-white")
 	let lastMoveBlack = document.getElementsByClassName("last-move-black")
-	for (let i = 0; i < lastMoveWhite.length;) {
+	for (let i = 0; i < lastMoveWhite.length; ) {
 		lastMoveWhite[i].setAttribute("class", "white-square")
 	}
-	for (let z = 0; z < lastMoveBlack.length;) {
+	for (let z = 0; z < lastMoveBlack.length; ) {
 		lastMoveBlack[z].setAttribute("class", "black-square")
 	}
 }
@@ -312,3 +338,32 @@ function lastMove(dragTarget, dropTarget) {
 		dropTarget.setAttribute("class", "last-move-black")
 	}
 }
+
+let clickedSquare = null
+board.addEventListener("click", (event)=> {
+	if (!clickedSquare) {
+		clickedSquare = event.target
+		if (clickedSquare.parentNode.className === "white-square") {
+			clickedSquare.parentNode.setAttribute("class", "last-move-white")
+			squareChanged = true
+		} else if (clickedSquare.parentNode.className === "black-square") {
+			clickedSquare.parentNode.setAttribute("class", "last-move-black")
+			squareChanged = true
+		}
+	} else {
+		if (squareChanged) {
+			if (clickedSquare.parentNode.className === "last-move-white") {
+				clickedSquare.parentNode.setAttribute("class", "white-square")
+			} else {
+				clickedSquare.parentNode.setAttribute("class", "black-square")
+			}
+			squareChanged = false
+		}
+		if (event.target.getAttribute("draggable") === "true") {
+			onDrop(clickedSquare, event.target.parentNode)
+		} else {
+			onDrop(clickedSquare, event.target)
+		}
+		clickedSquare = null
+	}
+})
