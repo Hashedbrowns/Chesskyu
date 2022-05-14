@@ -1,5 +1,4 @@
-//TODO: when dragging after click remove highlight on clicked square
-// redo move if player clicks away during promotion
+//TODO: fix clicking not working after cancelled promotion, fix clicking not working for capture
 const chess = new Chess()
 const board = document.querySelector(".board")
 
@@ -163,6 +162,7 @@ function onDrop(dragTarget, dropTarget) {
 		dragTarget.src[dragTarget.src.length - 5]
 	}`
 	let chessMove = chess.move(moveObject)
+	// check if move is valid
 	if (chessMove) {
 		if (chessMove.flags === "e") {
 			// if en passant
@@ -172,8 +172,8 @@ function onDrop(dragTarget, dropTarget) {
 		} else {
 			onMove(dragTarget, dropTarget)
 		}
+	// check if move is pawn promotion
 	} else if (
-		// check if move is pawn promotion
 		(dragPiece === "bp" && dropTarget.id[1] === "1") ||
 		(dragPiece === "wp" && dropTarget.id[1] === "8")
 	) {
@@ -189,7 +189,11 @@ function onDrop(dragTarget, dropTarget) {
 			board.addEventListener("dragstart", promotionDrag, {
 				once: true,
 			})
-			document.addEventListener("click", promotionMenuRef, { once: true })
+			if (clickedSquare) {
+				document.addEventListener("click", () => document.addEventListener("click", promotionMenuRef, { once: true }), {once:true})
+			} else {
+				document.addEventListener("click", promotionMenuRef, { once: true })
+			}
 		}
 	}
 }
@@ -256,6 +260,7 @@ function onCastle(dragTarget, dropTarget, flag) {
 }
 
 function onPromotion(dropTarget) {
+	console.log(1)
 	// open promotion interface based on color
 	if (dragPiece[0] === "w") {
 		whiteModalClone = whiteModal.cloneNode((deep = true))
@@ -272,6 +277,7 @@ function onPromotion(dropTarget) {
 }
 
 function promotionMenu(event, dragTarget, dropTarget) {
+	console.log(2)
 	let moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
 	board.removeEventListener("dragstart", promotionDrag)
 	// if white promote
@@ -342,11 +348,12 @@ function lastMove(dragTarget, dropTarget) {
 let clickedSquare = null
 board.addEventListener("click", (event)=> {
 	if (!clickedSquare) {
-		clickedSquare = event.target
-		if (clickedSquare.parentNode.className === "white-square") {
+		if (event.target.parentNode.className === "white-square") {
+			clickedSquare = event.target
 			clickedSquare.parentNode.setAttribute("class", "last-move-white")
 			squareChanged = true
-		} else if (clickedSquare.parentNode.className === "black-square") {
+		} else if (event.target.parentNode.className === "black-square") {
+			clickedSquare = event.target
 			clickedSquare.parentNode.setAttribute("class", "last-move-black")
 			squareChanged = true
 		}
@@ -361,7 +368,7 @@ board.addEventListener("click", (event)=> {
 		}
 		if (event.target.getAttribute("draggable") === "true") {
 			onDrop(clickedSquare, event.target.parentNode)
-		} else {
+		} else  {
 			onDrop(clickedSquare, event.target)
 		}
 		clickedSquare = null
