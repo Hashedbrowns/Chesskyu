@@ -29,14 +29,27 @@ body {
 .white-square {
 	display: flex;
 	aspect-ratio: 1;
-	background-color: #b5b5b5;
+	background-color: rgb(181, 181, 181);
 	position: relative;
 }
 
 .black-square {
 	display: flex;
 	aspect-ratio: 1;
-	background-color: #71828f;
+	background-color: rgb(113, 130, 143);
+	position: relative;
+}
+.last-move-white {
+	display: flex;
+	aspect-ratio: 1;
+	background-color: rgb(168, 188, 196);
+	position: relative;
+}
+
+.last-move-black {
+	display: flex;
+	aspect-ratio: 1;
+	background-color: rgb(124, 156, 172);
 	position: relative;
 }
 
@@ -101,3 +114,4 @@ body {
 	  background-color: #81A1C1;
 
   }
+
