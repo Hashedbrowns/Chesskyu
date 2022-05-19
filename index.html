@@ -28,23 +28,33 @@
 		<header>
 			<h1 id="site-title">chess<span>kyu</span></h1>
 		</header>
-		<main>
-			<div class="board" draggable="false">
-				<div class="white-square" id="a8"></div>
-				<div class="black-square" id="b8"></div>
-				<div class="white-square" id="c8"></div>
-				<div class="black-square" id="d8"></div>
-				<div class="white-square" id="e8"></div>
-				<div class="black-square" id="f8"></div>
-				<div class="white-square" id="g8"></div>
-				<div class="black-square" id="h8"></div>
-				<div class="black-square" id="a7"></div>
-				<div class="white-square" id="b7"></div>
-				<div class="black-square" id="c7"></div>
-				<div class="white-square" id="d7"></div>
-				<div class="black-square" id="e7"></div>
-				<div class="white-square" id="f7"></div>
-				<div class="black-square" id="g7"></div>
+		<div class = "main-content">
+			<div class = "moves">
+				<div class = "turn">
+					<div class = "turn-number">1</div>
+					<div class = "white-move"></div>
+					<div class = "black-move"></div>
+				</div>
+			</div>
+			<div class = "board-wrapper">
+				<div class="board" draggable="false">
+					<div class="game-over">
+					</div>
+					<div class="white-square" id="a8"></div>
+					<div class="black-square" id="b8"></div>
+					<div class="white-square" id="c8"></div>
+					<div class="black-square" id="d8"></div>
+					<div class="white-square" id="e8"></div>
+					<div class="black-square" id="f8"></div>
+					<div class="white-square" id="g8"></div>
+					<div class="black-square" id="h8"></div>
+					<div class="black-square" id="a7"></div>
+					<div class="white-square" id="b7"></div>
+					<div class="black-square" id="c7"></div>
+					<div class="white-square" id="d7"></div>
+					<div class="black-square" id="e7"></div>
+					<div class="white-square" id="f7"></div>
+					<div class="black-square" id="g7"></div>
 				<div class="white-square" id="h7"></div>
 				<div class="white-square" id="a6"></div>
 				<div class="black-square" id="b6"></div>
@@ -95,41 +105,45 @@
 				<div class="black-square" id="g1"></div>
 				<div class="white-square" id="h1"></div>
 			</div>
-			<!-- Experimental modal-->
-			<div id = "white-promotion" class="white-modal">
-				<!-- Modal content -->
-				<div class="white-content">
-					<img src="pieces/wq.svg" /> 
-				</div>
-				<div class="white-content">
-					<img src="pieces/wr.svg" />
-				</div>
-				<div class="white-content">
-					<img src="pieces/wb.svg" />
-				</div>
-				<div class="white-content">
-					<img src="pieces/wn.svg" />
-				</div>
-				<span class="close">&times;</span>
+		</div>
+		<div class = "options">
+			<button class="reset-button" role="button">Play Again</button>
+		</div> 
+	</div>
+		<footer class = "footer">Footer</footer>
+		<!-- Experimental modal-->
+		<div id = "white-promotion" class="white-modal">
+			<!-- Modal content -->
+			<div class="white-content">
+				<img src="pieces/wq.svg" /> 
 			</div>
-			<div id = "black-promotion" class="black-modal">
-				<!-- Modal content -->
-				<span class="close">&times;</span>
-				<div class="black-content">
-					<img src="pieces/bn.svg" />
-				</div>
-				<div class="black-content">
-					<img src="pieces/bb.svg" />
-				</div>
-				<div class="black-content">
-					<img src="pieces/br.svg" />
-				</div>
-				<div class="black-content">
-					<img src="pieces/bq.svg" />
-				</div>
+			<div class="white-content">
+				<img src="pieces/wr.svg" />
 			</div>
-
-			<script src="main.js"></script>
-		</main>
+			<div class="white-content">
+				<img src="pieces/wb.svg" />
+			</div>
+			<div class="white-content">
+				<img src="pieces/wn.svg" />
+			</div>
+			<span class="close">&times;</span>
+		</div>
+		<div id = "black-promotion" class="black-modal">
+			<!-- Modal content -->
+			<span class="close">&times;</span>
+			<div class="black-content">
+				<img src="pieces/bn.svg" />
+			</div>
+			<div class="black-content">
+				<img src="pieces/bb.svg" />
+			</div>
+			<div class="black-content">
+				<img src="pieces/br.svg" />
+			</div>
+			<div class="black-content">
+				<img src="pieces/bq.svg" />
+			</div>
+		</div>
+		<script src="main.js"></script>
 	</body>
-</html>
+	</html>
