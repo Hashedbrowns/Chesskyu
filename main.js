@@ -1,4 +1,4 @@
-//TODO: fix clicking not working after cancelled promotion, fix clicking not working for capture
+//TODO: make popup for loss, add sound, style play again button
 const chess = new Chess()
 const board = document.querySelector(".board")
 
@@ -136,7 +136,7 @@ board.addEventListener(
 			}
 			squareChanged = false
 		}
-		
+
 		// move dragged elem to the selected drop target
 		if (event.target.getAttribute("draggable") === "true") {
 			onDrop(dragged, event.target.parentNode)
@@ -172,12 +172,11 @@ function onDrop(dragTarget, dropTarget) {
 		} else {
 			onMove(dragTarget, dropTarget)
 		}
-	// check if move is pawn promotion
+		// check if move is pawn promotion
 	} else if (
 		(dragPiece === "bp" && dropTarget.id[1] === "1") ||
 		(dragPiece === "wp" && dropTarget.id[1] === "8")
 	) {
-		/* TODO: Make interface for promotion choice */
 		if (
 			chess
 				.moves({ square: dragTarget.parentNode.id })
@@ -189,18 +188,27 @@ function onDrop(dragTarget, dropTarget) {
 			board.addEventListener("dragstart", promotionDrag, {
 				once: true,
 			})
+			// prevent event listener from firing if click to move is used
 			if (clickedSquare) {
-				document.addEventListener("click", () => document.addEventListener("click", promotionMenuRef, { once: true }), {once:true})
+				board.addEventListener(
+					"click",
+					() =>
+						board.addEventListener("click", promotionMenuRef, {
+							once: true,
+						}),
+					{ once: true }
+				)
 			} else {
-				document.addEventListener("click", promotionMenuRef, { once: true })
+				board.addEventListener("click", promotionMenuRef, {
+					once: true,
+				})
 			}
 		}
 	}
 }
 
 function onMove(dragTarget, dropTarget) {
-	squareDefault()
-	lastMove(dragTarget.parentNode, dropTarget)
+	onValidMove(dragTarget.parentNode,dropTarget)
 	// change dropTarget piece to dragTarget piece
 	if (dropTarget.firstChild) {
 		dropTarget.removeChild(dropTarget.firstChild)
@@ -211,8 +219,7 @@ function onMove(dragTarget, dropTarget) {
 
 function onEnPassant(dragTarget, dropTarget) {
 	let targetPawn
-	squareDefault()
-	lastMove(dragTarget.parentNode, dropTarget)
+	onValidMove(dragTarget.parentNode,dropTarget)
 	// check color
 	if (dragPiece[0] === "w") {
 		targetPawn = `#${dropTarget.id[0]}${Number(dropTarget.id[1]) - 1}`
@@ -228,8 +235,7 @@ function onEnPassant(dragTarget, dropTarget) {
 function onCastle(dragTarget, dropTarget, flag) {
 	let rookInitSquare
 	let rookFinalSquare
-	squareDefault()
-	lastMove(dragTarget.parentNode, dropTarget)
+	onValidMove(dragTarget.parentNode,dropTarget)
 	if (dragPiece[0] === "w") {
 		// castle for white
 		if (flag === "k") {
@@ -260,7 +266,6 @@ function onCastle(dragTarget, dropTarget, flag) {
 }
 
 function onPromotion(dropTarget) {
-	console.log(1)
 	// open promotion interface based on color
 	if (dragPiece[0] === "w") {
 		whiteModalClone = whiteModal.cloneNode((deep = true))
@@ -277,7 +282,6 @@ function onPromotion(dropTarget) {
 }
 
 function promotionMenu(event, dragTarget, dropTarget) {
-	console.log(2)
 	let moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
 	board.removeEventListener("dragstart", promotionDrag)
 	// if white promote
@@ -312,7 +316,7 @@ function promotionMenu(event, dragTarget, dropTarget) {
 }
 
 function promotionDrag() {
-	document.removeEventListener("click", promotionMenuRef)
+	board.removeEventListener("click", promotionMenuRef)
 	if (dragPiece[0] === "w") {
 		// remove promotion menu
 		whiteModalClone.parentNode.removeChild(whiteModalClone)
@@ -344,9 +348,9 @@ function lastMove(dragTarget, dropTarget) {
 		dropTarget.setAttribute("class", "last-move-black")
 	}
 }
-
+ 
 let clickedSquare = null
-board.addEventListener("click", (event)=> {
+board.addEventListener("click", (event) => {
 	if (!clickedSquare) {
 		if (event.target.parentNode.className === "white-square") {
 			clickedSquare = event.target
@@ -368,9 +372,65 @@ board.addEventListener("click", (event)=> {
 		}
 		if (event.target.getAttribute("draggable") === "true") {
 			onDrop(clickedSquare, event.target.parentNode)
-		} else  {
+		} else {
 			onDrop(clickedSquare, event.target)
 		}
 		clickedSquare = null
-	}
+	} 
 })
+
+resetButton = document.querySelector(".reset-button")
+resetButton.addEventListener("click", playAgain)
+function playAgain() {
+	allSquares = board.children
+	for (let i = 0; i < allSquares.length; i ++) {
+		if (allSquares[i].firstChild) {
+			allSquares[i].removeChild(allSquares[i].firstChild)
+		}
+	}
+	squareDefault()
+	chess.reset()
+	populateBoard()
+	gameOverModal.style.display = "none"
+}
+
+let gameOverModal = document.querySelector(".game-over")
+function gameOver() {
+	if (chess.in_checkmate() || chess.in_draw() || chess.in_stalemate() || chess.in_threefold_repetition()) {
+		gameOverModal.style.display = "block"
+	}
+}
+
+const allTurns = []
+const movesDisplay = document.querySelector(".moves")
+function updateTurn() {
+	const movesLength = chess.history().length
+	let newTurn
+	let blackMove
+	if (movesLength % 2 === 0) {
+		blackMove = allTurns[allTurns.length-1].querySelector(".black-move")
+		blackMove.textContent = chess.history()[movesLength-1]
+	} else {
+		if (allTurns.length === 0) {
+			newTurn = document.querySelector(".turn")
+		} else {
+			newTurn = document.querySelector(".turn").cloneNode(deep = true)
+		}
+		const turnNumber = newTurn.querySelector(".turn-number")
+		const whiteMove = newTurn.querySelector(".white-move")
+		blackMove = newTurn.querySelector(".black-move")
+		blackMove.textContent = ""
+		turnNumber.textContent = Math.ceil(movesLength/2)
+		whiteMove.textContent = chess.history()[movesLength-1]
+		turnNumber.textContent = allTurns.length+1
+		allTurns.push(newTurn)
+		movesDisplay.appendChild(newTurn)
+	}
+}
+
+function onValidMove(dragTarget,dropTarget) {
+	squareDefault()
+	lastMove(dragTarget,dropTarget)
+	gameOver()
+	updateTurn()
+}
