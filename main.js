@@ -1,4 +1,4 @@
-//TODO: make popup for loss, add sound, style play again button
+//TODO: add sound, style scrollbar
 const chess = new Chess()
 const board = document.querySelector(".board")
 
@@ -31,6 +31,7 @@ let dragged
 let dragPiece
 let promotionMenuRef
 let squareChanged = false
+let clickedSquare = null
 /* events fired on the draggable target */
 board.addEventListener(
 	"drag",
@@ -44,23 +45,13 @@ board.addEventListener(
 	"dragstart",
 	function (event) {
 		if (clickedSquare) {
-			if (clickedSquare.parentNode.className === "last-move-white") {
-				clickedSquare.parentNode.setAttribute("class", "white-square")
-			} else {
-				clickedSquare.parentNode.setAttribute("class", "black-square")
-			}
+			squareDefault(clickedSquare.parentNode)
 			clickedSquare = null
 			squareChanged = false
 		}
 		// store a ref. on the dragged elem
 		dragged = event.target
-		if (dragged.parentNode.className === "white-square") {
-			dragged.parentNode.setAttribute("class", "last-move-white")
-			squareChanged = true
-		} else if (dragged.parentNode.className === "black-square") {
-			dragged.parentNode.setAttribute("class", "last-move-black")
-			squareChanged = true
-		}
+		squareChanged = lastMove(dragged.parentNode)
 		// make it half transparent
 		event.target.style.opacity = 0.5
 		possibleMoves = chess.moves({ square: dragged.parentNode.id })
@@ -129,14 +120,9 @@ board.addEventListener(
 	"drop",
 	function (event) {
 		if (squareChanged) {
-			if (dragged.parentNode.className === "last-move-white") {
-				dragged.parentNode.setAttribute("class", "white-square")
-			} else {
-				dragged.parentNode.setAttribute("class", "black-square")
-			}
+			squareDefault(dragged.parentNode)
 			squareChanged = false
 		}
-
 		// move dragged elem to the selected drop target
 		if (event.target.getAttribute("draggable") === "true") {
 			onDrop(dragged, event.target.parentNode)
@@ -157,13 +143,14 @@ const whiteModal = document.querySelector("#white-promotion")
 const blackModal = document.querySelector("#black-promotion")
 
 function onDrop(dragTarget, dropTarget) {
-	let moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
+	const moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
 	dragPiece = `${dragTarget.src[dragTarget.src.length - 6]}${
 		dragTarget.src[dragTarget.src.length - 5]
 	}`
-	let chessMove = chess.move(moveObject)
+	const chessMove = chess.move(moveObject)
 	// check if move is valid
 	if (chessMove) {
+		onValidMove(dragTarget.parentNode, dropTarget)
 		if (chessMove.flags === "e") {
 			// if en passant
 			onEnPassant(dragTarget, dropTarget)
@@ -188,38 +175,23 @@ function onDrop(dragTarget, dropTarget) {
 			board.addEventListener("dragstart", promotionDrag, {
 				once: true,
 			})
-			// prevent event listener from firing if click to move is used
-			if (clickedSquare) {
-				board.addEventListener(
-					"click",
-					() =>
-						board.addEventListener("click", promotionMenuRef, {
-							once: true,
-						}),
-					{ once: true }
-				)
-			} else {
-				board.addEventListener("click", promotionMenuRef, {
-					once: true,
-				})
-			}
+			board.addEventListener("click", promotionMenuRef, {
+				once: true,
+			})
 		}
 	}
 }
 
 function onMove(dragTarget, dropTarget) {
-	onValidMove(dragTarget.parentNode,dropTarget)
 	// change dropTarget piece to dragTarget piece
 	if (dropTarget.firstChild) {
 		dropTarget.removeChild(dropTarget.firstChild)
 	}
-	dragTarget.parentNode.removeChild(dragTarget)
 	dropTarget.appendChild(dragTarget)
 }
 
 function onEnPassant(dragTarget, dropTarget) {
 	let targetPawn
-	onValidMove(dragTarget.parentNode,dropTarget)
 	// check color
 	if (dragPiece[0] === "w") {
 		targetPawn = `#${dropTarget.id[0]}${Number(dropTarget.id[1]) - 1}`
@@ -235,59 +207,55 @@ function onEnPassant(dragTarget, dropTarget) {
 function onCastle(dragTarget, dropTarget, flag) {
 	let rookInitSquare
 	let rookFinalSquare
-	onValidMove(dragTarget.parentNode,dropTarget)
 	if (dragPiece[0] === "w") {
 		// castle for white
 		if (flag === "k") {
 			// castle for king side
-			rookInitSquare = document.querySelector("#h1")
-			rookFinalSquare = document.querySelector("#f1")
+			rookInitSquare = board.querySelector("#h1")
+			rookFinalSquare = board.querySelector("#f1")
 		} else {
 			// castle for queen side
-			rookInitSquare = document.querySelector("#a1")
-			rookFinalSquare = document.querySelector("#d1")
+			rookInitSquare = board.querySelector("#a1")
+			rookFinalSquare = board.querySelector("#d1")
 		}
 	} else {
 		// castle for black
 		if (flag === "k") {
 			// castle for king side
-			rookInitSquare = document.querySelector("#h8")
-			rookFinalSquare = document.querySelector("#f8")
+			rookInitSquare = board.querySelector("#h8")
+			rookFinalSquare = board.querySelector("#f8")
 		} else {
 			// castle for queen side
-			rookInitSquare = document.querySelector("#a8")
-			rookFinalSquare = document.querySelector("#d8")
+			rookInitSquare = board.querySelector("#a8")
+			rookFinalSquare = board.querySelector("#d8")
 		}
 	}
-	let rook = rookInitSquare.firstChild
-	rookInitSquare.removeChild(rook)
-	rookFinalSquare.appendChild(rook)
+	rookFinalSquare.appendChild(rookInitSquare.firstChild)
 	dropTarget.appendChild(dragTarget)
 }
 
 function onPromotion(dropTarget) {
 	// open promotion interface based on color
 	if (dragPiece[0] === "w") {
-		whiteModalClone = whiteModal.cloneNode((deep = true))
-		whiteModalClone.style.display = "grid"
+		whiteModal.style.display = "grid"
 		const promotionSquare = document.querySelector(`#${dropTarget}`)
-		promotionSquare.appendChild(whiteModalClone)
+		promotionSquare.appendChild(whiteModal)
 	} else {
-		blackModalClone = blackModal.cloneNode((deep = true))
-		blackModalClone.style.display = "grid"
+		blackModal.style.display = "grid"
 		dropTarget = `${dropTarget[0]}${Number(dropTarget[1]) + 3}`
 		const promotionSquare = document.querySelector(`#${dropTarget}`)
-		promotionSquare.appendChild(blackModalClone)
+		promotionSquare.appendChild(blackModal)
 	}
 }
 
 function promotionMenu(event, dragTarget, dropTarget) {
-	let moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
+	const moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
 	board.removeEventListener("dragstart", promotionDrag)
 	// if white promote
 	if (dragPiece[0] === "w") {
 		// remove promotion menu
-		whiteModalClone.parentNode.removeChild(whiteModalClone)
+		whiteModal.parentNode.removeChild(whiteModal)
+		whiteModal.style.display = "none"
 		if (
 			event.target.parentNode.className === "white-content" &&
 			event.target.className !== "close"
@@ -296,12 +264,14 @@ function promotionMenu(event, dragTarget, dropTarget) {
 			moveObject.promotion = event.target.src[event.target.src.length - 5]
 			chess.move(moveObject)
 			dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
+			onValidMove(dragTarget.parentNode, dropTarget)
 			onMove(dragTarget, dropTarget)
 		}
 		// if black promote
 	} else {
 		// remove promotion menu
-		blackModalClone.parentNode.removeChild(blackModalClone)
+		blackModal.parentNode.removeChild(blackModal)
+		blackModal.style.display = "none"
 		if (
 			event.target.parentNode.className === "black-content" &&
 			event.target.className !== "close"
@@ -310,6 +280,7 @@ function promotionMenu(event, dragTarget, dropTarget) {
 			moveObject.promotion = event.target.src[event.target.src.length - 5]
 			chess.move(moveObject)
 			dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
+			onValidMove(dragTarget.parentNode, dropTarget)
 			onMove(dragTarget, dropTarget)
 		}
 	}
@@ -317,57 +288,25 @@ function promotionMenu(event, dragTarget, dropTarget) {
 
 function promotionDrag() {
 	board.removeEventListener("click", promotionMenuRef)
-	if (dragPiece[0] === "w") {
+	if (whiteModal.style.display === "grid") {
 		// remove promotion menu
-		whiteModalClone.parentNode.removeChild(whiteModalClone)
-	} else {
-		blackModalClone.parentNode.removeChild(blackModalClone)
+		whiteModal.parentNode.removeChild(whiteModal)
+		whiteModal.style.display = "none"
+	} else if (blackModal.style.display === "grid") {
+		blackModal.parentNode.removeChild(blackModal)
+		blackModal.style.display = "none"
 	}
 }
 
-function squareDefault() {
-	let lastMoveWhite = document.getElementsByClassName("last-move-white")
-	let lastMoveBlack = document.getElementsByClassName("last-move-black")
-	for (let i = 0; i < lastMoveWhite.length; ) {
-		lastMoveWhite[i].setAttribute("class", "white-square")
-	}
-	for (let z = 0; z < lastMoveBlack.length; ) {
-		lastMoveBlack[z].setAttribute("class", "black-square")
-	}
-}
-
-function lastMove(dragTarget, dropTarget) {
-	if (dragTarget.className === "white-square") {
-		dragTarget.setAttribute("class", "last-move-white")
-	} else {
-		dragTarget.setAttribute("class", "last-move-black")
-	}
-	if (dropTarget.className === "white-square") {
-		dropTarget.setAttribute("class", "last-move-white")
-	} else {
-		dropTarget.setAttribute("class", "last-move-black")
-	}
-}
- 
-let clickedSquare = null
 board.addEventListener("click", (event) => {
 	if (!clickedSquare) {
-		if (event.target.parentNode.className === "white-square") {
+		squareChanged = lastMove(event.target.parentNode)
+		if (squareChanged) {
 			clickedSquare = event.target
-			clickedSquare.parentNode.setAttribute("class", "last-move-white")
-			squareChanged = true
-		} else if (event.target.parentNode.className === "black-square") {
-			clickedSquare = event.target
-			clickedSquare.parentNode.setAttribute("class", "last-move-black")
-			squareChanged = true
 		}
 	} else {
 		if (squareChanged) {
-			if (clickedSquare.parentNode.className === "last-move-white") {
-				clickedSquare.parentNode.setAttribute("class", "white-square")
-			} else {
-				clickedSquare.parentNode.setAttribute("class", "black-square")
-			}
+			squareDefault(clickedSquare.parentNode)
 			squareChanged = false
 		}
 		if (event.target.getAttribute("draggable") === "true") {
@@ -376,14 +315,50 @@ board.addEventListener("click", (event) => {
 			onDrop(clickedSquare, event.target)
 		}
 		clickedSquare = null
-	} 
+	}
 })
 
-resetButton = document.querySelector(".reset-button")
+function squareDefault(optionalSquare = null) {
+	if (optionalSquare && optionalSquare.className === "last-move-white") {
+		optionalSquare.setAttribute("class", "white-square")
+	} else if (optionalSquare) {
+		optionalSquare.setAttribute("class", "black-square")
+	} else {
+		const lastMoveWhite = document.getElementsByClassName("last-move-white")
+		const lastMoveBlack = document.getElementsByClassName("last-move-black")
+		for (let i = 0; i < lastMoveWhite.length; ) {
+			lastMoveWhite[i].setAttribute("class", "white-square")
+		}
+		for (let z = 0; z < lastMoveBlack.length; ) {
+			lastMoveBlack[z].setAttribute("class", "black-square")
+		}
+	}
+}
+
+function lastMove(dragTarget, dropTarget = null) {
+	let changed = false
+	if (dragTarget.className === "white-square") {
+		dragTarget.setAttribute("class", "last-move-white")
+		changed = true
+	} else if (dragTarget.className === "black-square") {
+		dragTarget.setAttribute("class", "last-move-black")
+		changed = true
+	}
+	if (dropTarget && dropTarget.className === "white-square") {
+		dropTarget.setAttribute("class", "last-move-white")
+		changed = true
+	} else if (dropTarget) {
+		dropTarget.setAttribute("class", "last-move-black")
+		changed = true
+	}
+	return changed
+}
+
+const resetButton = document.querySelector(".reset-button")
 resetButton.addEventListener("click", playAgain)
 function playAgain() {
 	allSquares = board.children
-	for (let i = 0; i < allSquares.length; i ++) {
+	for (let i = 0; i < allSquares.length; i++) {
 		if (allSquares[i].firstChild) {
 			allSquares[i].removeChild(allSquares[i].firstChild)
 		}
@@ -391,46 +366,159 @@ function playAgain() {
 	squareDefault()
 	chess.reset()
 	populateBoard()
+	while (movesDisplay.children.length > 1) {
+		movesDisplay.removeChild(movesDisplay.lastChild)
+	}
+	movesDisplay.firstElementChild.lastElementChild.textContent = ""
+	movesDisplay.firstElementChild.children[1].textContent = ""
+	movesDisplay.firstElementChild.className = "last-turn"
+	lastTurn = null
 	gameOverModal.style.display = "none"
 }
 
-let gameOverModal = document.querySelector(".game-over")
+const gameOverModal = document.querySelector(".game-over")
 function gameOver() {
-	if (chess.in_checkmate() || chess.in_draw() || chess.in_stalemate() || chess.in_threefold_repetition()) {
+	if (
+		chess.in_checkmate() ||
+		chess.in_draw() ||
+		chess.in_stalemate() ||
+		chess.in_threefold_repetition()
+	) {
 		gameOverModal.style.display = "block"
 	}
 }
 
-const allTurns = []
+
 const movesDisplay = document.querySelector(".moves")
-function updateTurn() {
+function updateTurnDisplay() {
 	const movesLength = chess.history().length
-	let newTurn
-	let blackMove
-	if (movesLength % 2 === 0) {
-		blackMove = allTurns[allTurns.length-1].querySelector(".black-move")
-		blackMove.textContent = chess.history()[movesLength-1]
+	let whiteTurn
+	if (movesLength === 1) {
+		whiteTurn = document.createElement("div")
+		whiteTurn.className = "white-turn"
+		whiteTurn.textContent = chess.history()[movesLength - 1]
+		movesDisplay.appendChild(whiteTurn)
+	} else if (movesLength % 2 === 0) {
+		const blackTurn = document.createElement("div")
+		blackTurn.className = "black-turn"
+		blackTurn.textContent = chess.history()[movesLength - 1]
+		movesDisplay.appendChild(blackTurn)
 	} else {
-		if (allTurns.length === 0) {
-			newTurn = document.querySelector(".turn")
-		} else {
-			newTurn = document.querySelector(".turn").cloneNode(deep = true)
-		}
-		const turnNumber = newTurn.querySelector(".turn-number")
-		const whiteMove = newTurn.querySelector(".white-move")
-		blackMove = newTurn.querySelector(".black-move")
-		blackMove.textContent = ""
-		turnNumber.textContent = Math.ceil(movesLength/2)
-		whiteMove.textContent = chess.history()[movesLength-1]
-		turnNumber.textContent = allTurns.length+1
-		allTurns.push(newTurn)
-		movesDisplay.appendChild(newTurn)
+		const turnNumber = document.createElement("div")
+		turnNumber.textContent = Math.ceil(movesLength / 2)
+		turnNumber.className = "turn-number"
+		whiteTurn = document.createElement("div")
+		whiteTurn.className = "white-turn"
+		whiteTurn.textContent = chess.history()[movesLength - 1]
+		movesDisplay.appendChild(turnNumber)
+		movesDisplay.appendChild(whiteTurn)
 	}
 }
-
-function onValidMove(dragTarget,dropTarget) {
+function onValidMove(dragTarget, dropTarget) {
 	squareDefault()
-	lastMove(dragTarget,dropTarget)
+	lastMove(dragTarget, dropTarget)
+	updateTurnDisplay()
 	gameOver()
-	updateTurn()
+}
+
+const undoButton = document.querySelector(".undo-button")
+undoButton.addEventListener("click", undoMove)
+
+function undoMove() {
+	const color = chess.turn()
+	const moveToUndo = chess.undo()
+	promotionDrag()
+	if (moveToUndo) {
+		const undoTo = board.querySelector(`#${moveToUndo.to}`)
+		const undoFrom = board.querySelector(`#${moveToUndo.from}`)
+		onUndo(undoTo, undoFrom)
+		if (moveToUndo.flags === "c") {
+			undoCapture(moveToUndo, undoTo, color)
+		} else if (moveToUndo.flags === "e") {
+			undoEnPassant(moveToUndo, color)
+		} else if (moveToUndo.flags.length === 2) {
+			if (moveToUndo.flags[0] === "c") {
+				undoCapture(moveToUndo, undoTo, color)
+			}
+			undoPromotion(undoFrom)
+		} else if (moveToUndo.flags === "k" || moveToUndo.flags === "q") {
+			undoCastle(moveToUndo.flags,moveToUndo)
+		}
+	}
+}
+function undoCapture(moveToUndo, undoTo, color) {
+	piece = `pieces/${color}${moveToUndo.captured}.svg`
+	img = document.createElement("img")
+	img.src = piece
+	img.setAttribute("draggable", "true")
+	undoTo.appendChild(img)
+}
+
+function undoEnPassant(moveToUndo, color) {
+	let coordinates
+	piece = `pieces/${color}${moveToUndo.captured}.svg`
+	img = document.createElement("img")
+	img.src = piece
+	img.setAttribute("draggable", "true")
+	if (color === "b") {
+		coordinates = `${moveToUndo.to[0]}${Number(moveToUndo.to[1]) - 1}`
+	} else {
+		coordinates = `${moveToUndo.to[0]}${Number(moveToUndo.to[1]) + 1}`
+	}
+	const undoTo = board.querySelector(`#${coordinates}`)
+	undoTo.appendChild(img)
+}
+
+function undoPromotion(undoFrom) {
+	undoFrom.firstChild.src = `pieces/${chess.turn()}p.svg`
+}
+
+function undoCastle(flag,moveToUndo) {
+	let rookInitSquare
+	let rookFinalSquare
+	if (moveToUndo.color === "w") {
+		// castle for white
+		if (flag === "k") {
+			// castle for king side
+			rookInitSquare = board.querySelector("#h1")
+			rookFinalSquare = board.querySelector("#f1")
+		} else {
+			// castle for queen side
+			rookInitSquare = board.querySelector("#a1")
+			rookFinalSquare = board.querySelector("#d1")
+		}
+	} else {
+		// castle for black
+		if (flag === "k") {
+			// castle for king side
+			rookInitSquare = board.querySelector("#h8")
+			rookFinalSquare = board.querySelector("#f8")
+		} else {
+			// castle for queen side
+			rookInitSquare = board.querySelector("#a8")
+			rookFinalSquare = board.querySelector("#d8")
+		}
+	}
+	rookInitSquare.appendChild(rookFinalSquare.firstChild)
+}
+
+function onUndo(undoTo, undoFrom) {
+	undoFrom.appendChild(undoTo.firstChild)
+	squareDefault()
+	const allMoves = chess.history({ verbose: true })
+	if (allMoves.length > 0) {
+		const newLastMove = allMoves[allMoves.length - 1]
+		const moveFrom = board.querySelector(`#${newLastMove.from}`)
+		const moveTo = board.querySelector(`#${newLastMove.to}`)
+		lastMove(moveFrom, moveTo)
+	}
+	undoTurnDisplay(allMoves.length + 1)
+}
+
+function undoTurnDisplay(numberofMoves) {
+	if (!(numberofMoves % 2 === 0 || movesDisplay.children.length === 2)) {
+		movesDisplay.removeChild(movesDisplay.lastChild)
+	} 
+	movesDisplay.removeChild(movesDisplay.lastChild)
+
 }

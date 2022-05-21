@@ -28,18 +28,45 @@ body {
 		flex-direction: row;
 	}
 }
-.moves {
+.left-sidebar {
 	grid-column: 1 / 2;
 	height: 400px;
 	width: 300px;
 	background-color: #404454;
-	border-radius: 25px;
+	border-radius: 10px;
 	border: 2px solid #4c566a;
 	margin: 1vw;
 	flex: 0 1 300px;
-	color: #aaaaaa;
 	padding: 0;
+	overflow-y: hidden;
+	display: grid;
+	grid-template-columns: auto 1%;
+}
+.moves {
+	display: grid;
+	grid-template-columns: 0.8fr 2fr 2fr;
+	grid-auto-rows: 3rem;
+	font-size: 20px;
 	overflow-y: auto;
+	color: #aaaaaa;
+}
+.scrollbar-space {
+	overflow-y: auto;
+}
+.moves::-webkit-scrollbar {
+	width: 5px;
+	background-color: transparent;
+  }
+
+.moves::-webkit-scrollbar-track {
+	width: 100px;
+	background-color: transparent;
+}
+
+.moves::-webkit-scrollbar-thumb {
+	width: 5px;
+	border-radius: 10px;
+	background-color: #4c566a;
 }
 .turn {
 	color: #aaaaaa;
@@ -53,18 +80,24 @@ body {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	height: 3rem;
 }
-.white-move,
-.black-move {
+.white-turn,
+.black-turn {
 	display: flex;
 	align-items: center;
 	padding-left: 1vw;
+	height: 3rem;
 }
-.white-move:hover,
-.black-move:hover {
+.black-turn {
+	margin-right: 3%
+}
+.white-turn:hover,
+.black-turn:hover{
 	background-color: #4c566a;
 	cursor: pointer;
 }
+
 .board-wrapper {
 	max-height: 800px;
 	max-width: 800px;
@@ -120,13 +153,14 @@ body {
 	height: 400px;
 	width: 300px;
 	background-color: #404454;
-	border-radius: 25px;
+	border-radius: 10px;
 	border: 2px solid #4c566a;
 	display: flex;
+	flex-direction: column;
 	margin: 1vw;
 	flex: 0 1 300px;
 }
-.reset-button {
+.reset-button,.undo-button {
 	align-items: center;
 	display: inline-block;
 	background-color: #404454;
@@ -155,13 +189,13 @@ body {
 	margin: auto;
 }
 
-.reset-button:hover {
+.reset-button:hover,.undo-button:hover {
 	border-color: #8fbcbb;
 	color: #8fbcbb;
 	fill: #8fbcbb;
 }
 
-.reset-button:active {
+.reset-button:active,.undo-button:active {
 	box-shadow: 7px 6px 28px 1px rgba(0, 0, 0, 0.24);
 	transform: translateY(4px);
 }

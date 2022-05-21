@@ -14,7 +14,7 @@
 			href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300&display=swap"
 			rel="stylesheet"
 		/>
-		<!--chess board and logic libraries-->
+		<!--chess logic library-->
 		<script
 			src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.js"
 			integrity="sha512-oprzqYFJfo4Bx/nNEcSI0xo7ggJrLc+qQ6hrS3zV/Jn0C4dsg4gu+FXW/Vm0jP9CrV7e5e6dcLUYkg3imjfjbw=="
@@ -29,12 +29,11 @@
 			<h1 id="site-title">chess<span>kyu</span></h1>
 		</header>
 		<div class = "main-content">
-			<div class = "moves">
-				<div class = "turn">
+			<div class = left-sidebar>
+				<div class = "moves">
 					<div class = "turn-number">1</div>
-					<div class = "white-move"></div>
-					<div class = "black-move"></div>
 				</div>
+				<div class = scrollbar-space></div>
 			</div>
 			<div class = "board-wrapper">
 				<div class="board" draggable="false">
@@ -107,6 +106,7 @@
 			</div>
 		</div>
 		<div class = "options">
+			<button class ="undo-button" role="button">Undo</button>
 			<button class="reset-button" role="button">Play Again</button>
 		</div> 
 	</div>
