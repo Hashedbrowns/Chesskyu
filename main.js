@@ -142,20 +142,28 @@ board.addEventListener(
 const whiteModal = document.querySelector("#white-promotion")
 const blackModal = document.querySelector("#black-promotion")
 
-function onDrop(dragTarget, dropTarget) {
-	const moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
+function onDrop(dragTarget, dropTarget, preview = null) {
+	let moveObject
+	if (preview) {
+		moveObject = preview
+	} else {
+		moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
+	}
 	dragPiece = `${dragTarget.src[dragTarget.src.length - 6]}${
 		dragTarget.src[dragTarget.src.length - 5]
 	}`
 	const chessMove = chess.move(moveObject)
 	// check if move is valid
 	if (chessMove) {
-		onValidMove(dragTarget.parentNode, dropTarget)
+		onValidMove(dragTarget.parentNode, dropTarget, preview)
 		if (chessMove.flags === "e") {
 			// if en passant
 			onEnPassant(dragTarget, dropTarget)
 		} else if (chessMove.flags === "k" || chessMove.flags === "q") {
 			onCastle(dragTarget, dropTarget, chessMove.flags)
+		} else if (chessMove.flags.length === 2) {
+			onMove(dragTarget, dropTarget)
+			dropTarget.firstChild.src = `pieces/${moveObject.color}${moveObject.promotion}.svg`
 		} else {
 			onMove(dragTarget, dropTarget)
 		}
@@ -369,10 +377,6 @@ function playAgain() {
 	while (movesDisplay.children.length > 1) {
 		movesDisplay.removeChild(movesDisplay.lastChild)
 	}
-	movesDisplay.firstElementChild.lastElementChild.textContent = ""
-	movesDisplay.firstElementChild.children[1].textContent = ""
-	movesDisplay.firstElementChild.className = "last-turn"
-	lastTurn = null
 	gameOverModal.style.display = "none"
 }
 
@@ -388,20 +392,24 @@ function gameOver() {
 	}
 }
 
-
 const movesDisplay = document.querySelector(".moves")
 function updateTurnDisplay() {
 	const movesLength = chess.history().length
+	if (movesLength > 1) {
+		movesDisplay.querySelector("#clicked-turn").removeAttribute("id")
+	}
 	let whiteTurn
 	if (movesLength === 1) {
 		whiteTurn = document.createElement("div")
 		whiteTurn.className = "white-turn"
 		whiteTurn.textContent = chess.history()[movesLength - 1]
+		whiteTurn.setAttribute("id", "clicked-turn")
 		movesDisplay.appendChild(whiteTurn)
 	} else if (movesLength % 2 === 0) {
 		const blackTurn = document.createElement("div")
 		blackTurn.className = "black-turn"
 		blackTurn.textContent = chess.history()[movesLength - 1]
+		blackTurn.setAttribute("id", "clicked-turn")
 		movesDisplay.appendChild(blackTurn)
 	} else {
 		const turnNumber = document.createElement("div")
@@ -410,28 +418,32 @@ function updateTurnDisplay() {
 		whiteTurn = document.createElement("div")
 		whiteTurn.className = "white-turn"
 		whiteTurn.textContent = chess.history()[movesLength - 1]
+		whiteTurn.setAttribute("id", "clicked-turn")
 		movesDisplay.appendChild(turnNumber)
 		movesDisplay.appendChild(whiteTurn)
 	}
 }
-function onValidMove(dragTarget, dropTarget) {
+function onValidMove(dragTarget, dropTarget, preview = null) {
 	squareDefault()
 	lastMove(dragTarget, dropTarget)
-	updateTurnDisplay()
+	if (!preview) {
+		updateTurnDisplay()
+	}
 	gameOver()
 }
 
 const undoButton = document.querySelector(".undo-button")
-undoButton.addEventListener("click", undoMove)
+undoButton.addEventListener("click", () => undoMove())
 
-function undoMove() {
+function undoMove(preview = false) {
 	const color = chess.turn()
 	const moveToUndo = chess.undo()
-	promotionDrag()
 	if (moveToUndo) {
+		promotionDrag()
+		squareDefault()
 		const undoTo = board.querySelector(`#${moveToUndo.to}`)
 		const undoFrom = board.querySelector(`#${moveToUndo.from}`)
-		onUndo(undoTo, undoFrom)
+		onUndo(undoTo, undoFrom, preview)
 		if (moveToUndo.flags === "c") {
 			undoCapture(moveToUndo, undoTo, color)
 		} else if (moveToUndo.flags === "e") {
@@ -442,7 +454,7 @@ function undoMove() {
 			}
 			undoPromotion(undoFrom)
 		} else if (moveToUndo.flags === "k" || moveToUndo.flags === "q") {
-			undoCastle(moveToUndo.flags,moveToUndo)
+			undoCastle(moveToUndo.flags, moveToUndo)
 		}
 	}
 }
@@ -473,7 +485,7 @@ function undoPromotion(undoFrom) {
 	undoFrom.firstChild.src = `pieces/${chess.turn()}p.svg`
 }
 
-function undoCastle(flag,moveToUndo) {
+function undoCastle(flag, moveToUndo) {
 	let rookInitSquare
 	let rookFinalSquare
 	if (moveToUndo.color === "w") {
@@ -502,9 +514,8 @@ function undoCastle(flag,moveToUndo) {
 	rookInitSquare.appendChild(rookFinalSquare.firstChild)
 }
 
-function onUndo(undoTo, undoFrom) {
+function onUndo(undoTo, undoFrom, preview) {
 	undoFrom.appendChild(undoTo.firstChild)
-	squareDefault()
 	const allMoves = chess.history({ verbose: true })
 	if (allMoves.length > 0) {
 		const newLastMove = allMoves[allMoves.length - 1]
@@ -512,13 +523,67 @@ function onUndo(undoTo, undoFrom) {
 		const moveTo = board.querySelector(`#${newLastMove.to}`)
 		lastMove(moveFrom, moveTo)
 	}
-	undoTurnDisplay(allMoves.length + 1)
+	if (!preview) {
+		undoTurnDisplay(allMoves.length)
+	}
 }
 
 function undoTurnDisplay(numberofMoves) {
-	if (!(numberofMoves % 2 === 0 || movesDisplay.children.length === 2)) {
+	if (numberofMoves % 2 === 0 && movesDisplay.children.length !== 2) {
 		movesDisplay.removeChild(movesDisplay.lastChild)
-	} 
+	}
 	movesDisplay.removeChild(movesDisplay.lastChild)
-
+	if (numberofMoves > 0) {
+		movesDisplay.lastChild.setAttribute("id", "clicked-turn")
+	}
+}
+movesDisplay.addEventListener("click", (event) => previousMovePreview(event))
+let undoneMoves = []
+function previousMovePreview(event) {
+	if (
+		event.target.className === "black-turn" ||
+		event.target.className === "white-turn"
+	) {
+		promotionDrag()
+		gameOverModal.style.display = "block"
+		movesDisplay.querySelector("#clicked-turn").removeAttribute("id")
+		event.target.setAttribute("id", "clicked-turn")
+		const previousMove = event.target.textContent
+		const moveHistoryVerbose = chess.history({ verbose: true })
+		const allMoves = movesDisplay.children
+		let index
+		let i = 0
+		while (!index) {
+			if (allMoves[i] === event.target) {
+				index = i
+			}
+			i++
+		}
+		const moveNumber = index - (Math.floor(index / 3) + 1)
+		if (moveNumber > moveHistoryVerbose.length - 1) {
+			let moveFrom
+			let moveTo
+			let lastMove
+			while (
+				moveHistoryVerbose[moveHistoryVerbose.length - 1].san !==
+				previousMove
+			) {
+				moveFrom = undoneMoves[undoneMoves.length - 1].from
+				moveTo = undoneMoves[undoneMoves.length - 1].to
+				moveFrom = board.querySelector(`#${moveFrom}`)
+				moveTo = board.querySelector(`#${moveTo}`)
+				lastMove = undoneMoves.pop()
+				onDrop(moveFrom.firstChild, moveTo, lastMove)
+				moveHistoryVerbose.push(lastMove) 
+			}
+		} else {
+			while (moveHistoryVerbose.length - 1 > moveNumber) {
+				undoMove(true)
+				undoneMoves.push(moveHistoryVerbose.pop())
+			}
+		}
+		if (event.target === movesDisplay.lastChild) {
+			gameOverModal.style.display = "none"
+		}
+	}
 }
