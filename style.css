@@ -97,7 +97,10 @@ body {
 	background-color: #4c566a;
 	cursor: pointer;
 }
-
+#clicked-turn {
+	background-color: #4c566a;
+	border: 1px solid white;
+}
 .board-wrapper {
 	max-height: 800px;
 	max-width: 800px;
