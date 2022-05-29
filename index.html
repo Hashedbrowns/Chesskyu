@@ -21,6 +21,7 @@
 			crossorigin="anonymous"
 			referrerpolicy="no-referrer"
 		></script>
+		<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 		<!--title-->
 		<title>chesskyu</title>
 	</head>
@@ -37,23 +38,22 @@
 			</div>
 			<div class = "board-wrapper">
 				<div class="board" draggable="false">
-					<div class="game-over">
-					</div>
-					<div class="white-square" id="a8"></div>
-					<div class="black-square" id="b8"></div>
-					<div class="white-square" id="c8"></div>
-					<div class="black-square" id="d8"></div>
-					<div class="white-square" id="e8"></div>
-					<div class="black-square" id="f8"></div>
-					<div class="white-square" id="g8"></div>
-					<div class="black-square" id="h8"></div>
-					<div class="black-square" id="a7"></div>
-					<div class="white-square" id="b7"></div>
-					<div class="black-square" id="c7"></div>
-					<div class="white-square" id="d7"></div>
-					<div class="black-square" id="e7"></div>
-					<div class="white-square" id="f7"></div>
-					<div class="black-square" id="g7"></div>
+				<div class="game-over"></div>
+				<div class="white-square" id="a8"></div>
+				<div class="black-square" id="b8"></div>
+				<div class="white-square" id="c8"></div>
+				<div class="black-square" id="d8"></div>
+				<div class="white-square" id="e8"></div>
+				<div class="black-square" id="f8"></div>
+				<div class="white-square" id="g8"></div>
+				<div class="black-square" id="h8"></div>
+				<div class="black-square" id="a7"></div>
+				<div class="white-square" id="b7"></div>
+				<div class="black-square" id="c7"></div>
+				<div class="white-square" id="d7"></div>
+				<div class="black-square" id="e7"></div>
+				<div class="white-square" id="f7"></div>
+				<div class="black-square" id="g7"></div>
 				<div class="white-square" id="h7"></div>
 				<div class="white-square" id="a6"></div>
 				<div class="black-square" id="b6"></div>
@@ -106,8 +106,30 @@
 			</div>
 		</div>
 		<div class = "options">
-			<button class ="undo-button" role="button">Undo</button>
-			<button class="reset-button" role="button">Play Again</button>
+			<div class = "pre-game">
+				<button class = "single-player" role = "button">Single player</button>
+				<button class = "two-player" role = "button">Two player</button>
+				<div class = sliders>
+					<div class = "match-length">
+						<p>Match Length: 10 Minutes</p>
+						<div class="slider"></div>
+					</div>
+					<div class = "increment-length">
+						<p>Increment Length: 30 Seconds</p>
+						<div class="slider"></div>
+					</div>
+				</div>
+				<div class = "colors">
+					<img class = "chess-color" src = "pieces/wk.svg">
+					<img class = "chess-color" src = "pieces/wbk.svg">
+					<img class = "chess-color" src = "pieces/bk.svg">
+				</div>
+			</div>
+			<div class = "during-game">
+				<button class ="undo-button" role="button">Undo</button>
+				<button class="reset-button" role="button">Play Again</button>
+				<button class = "new-game-button" role = "button">New Game</button>
+			</div>
 		</div> 
 	</div>
 		<footer class = "footer">Footer</footer>
@@ -144,6 +166,6 @@
 				<img src="pieces/bq.svg" />
 			</div>
 		</div>
-		<script src="main.js"></script>
+		<script src="main.js" type = "module"></script>
 	</body>
 	</html>

@@ -1,4 +1,4 @@
-//TODO: add sound, style scrollbar
+//TODO: add sound, possible moves on click and drag start (maybe?), make layout responsive, chess ai
 const chess = new Chess()
 const board = document.querySelector(".board")
 
@@ -20,124 +20,127 @@ function populateBoard() {
 				coordinates = document.querySelector(coordinates)
 				img = document.createElement("img")
 				img.src = piece
-				img.setAttribute("draggable", "true")
+				img.setAttribute("class", "draggable-piece")
 				coordinates.appendChild(img)
 			}
 		}
 	}
 }
 
-let dragged
-let dragPiece
 let promotionMenuRef
 let squareChanged = false
 let clickedSquare = null
-/* events fired on the draggable target */
-board.addEventListener(
-	"drag",
-	function (event) {
-		event.preventDefault()
-	},
-	false
-)
-
-board.addEventListener(
-	"dragstart",
-	function (event) {
-		if (clickedSquare) {
-			squareDefault(clickedSquare.parentNode)
-			clickedSquare = null
-			squareChanged = false
-		}
-		// store a ref. on the dragged elem
-		dragged = event.target
-		squareChanged = lastMove(dragged.parentNode)
-		// make it half transparent
-		event.target.style.opacity = 0.5
-		possibleMoves = chess.moves({ square: dragged.parentNode.id })
-		event.dataTransfer.effectAllowed = "copyMove"
-	},
-	false
-)
-
-board.addEventListener(
-	"dragend",
-	function (event) {
-		// reset the transparency
-		event.target.style.opacity = ""
-	},
-	false
-)
-
-/* events fired on the drop targets */
-board.addEventListener(
-	"dragover",
-	function (event) {
-		// prevent default to allow drop
-		event.preventDefault()
-	},
-	false
-)
-
-board.addEventListener(
-	"dragenter",
-	function (event) {
-		// highlight potential drop target when the draggable element enters it
-		if (
-			event.target.className === "white-square" ||
-			event.target.className === "black-square" ||
-			event.target.className === "last-move-white" ||
-			event.target.className === "last-move-black" ||
-			event.target.getAttribute("draggable") === "true"
-		) {
-			if (!(event.target === dragged)) {
-				event.target.style.border = "medium solid white"
+interact(".draggable-piece").styleCursor(false)
+const position = { x: 0, y: 0 }
+interact(".draggable-piece").draggable({
+	listeners: {
+		start(event) {
+			if (
+				event.target.src[event.target.src.length - 6] === chess.turn()
+			) {
+				event.target.style.cursor = "grabbing"
+				// prevent drag and click from firing at same time
+				board.removeEventListener("mouseup", onPieceClick)
+				// prevent image overlap
+				event.target.style.zIndex = "1"
+				// clear click highlighting if exists
+				if (clickedSquare) {
+					squareDefault(clickedSquare.parentNode)
+					clickedSquare = null
+					squareChanged = false
+				}
+				// store a ref. on the dragged elem
+				squareChanged = lastMove(event.target.parentNode)
+				// center dragged element on cursor
+				let rect = event.target.getBoundingClientRect()
+				position.x -= rect.right - event.clientX
+				position.x += event.target.offsetWidth / 2
+				position.y -= rect.bottom - event.clientY
+				position.y += event.target.offsetHeight / 2
 			}
-		}
-		event.dataTransfer.dropEffect = "copy"
+		},
+		move(event) {
+			if (
+				event.target.src[event.target.src.length - 6] === chess.turn()
+			) {
+				// move dragged element based on cursor
+				position.x += event.dx
+				position.y += event.dy
+				event.target.style.transform = `translate(${position.x}px, ${position.y}px)`
+			}
+		},
+		end(event) {
+			// clear click highlighting if exists
+			event.target.style.removeProperty("cursor")
+			event.target.style.removeProperty("z-index")
+			// move dragged element to original position
+			event.target.style.removeProperty("transform")
+			position.x = 0
+			position.y = 0
+			board.addEventListener("mouseup", onPieceClick)
+			if (
+				event.target.src[event.target.src.length - 6] === chess.turn()
+			) {
+				squareDefault(event.target.parentNode)
+				squareChanged = false
+				clickedSquare = null
+			}
+		},
 	},
-	false
-)
+	modifiers: [
+		interact.modifiers.restrict({
+			restriction: ".board",
+		}),
+	],
+})
 
-board.addEventListener(
-	"dragleave",
-	function (event) {
-		// reset background of potential drop target when the draggable element leaves it
-		if (
-			event.target.className === "white-square" ||
-			event.target.className === "black-square" ||
-			event.target.className === "last-move-white" ||
-			event.target.className === "last-move-black" ||
-			event.target.getAttribute("draggable") === "true"
-		) {
-			event.target.style.border = ""
-		}
-	},
-	false
-)
+interact("div.board > *").dropzone({
+	// only accept elements matching this CSS selector
+	accept: ".draggable-piece",
+	// Require a 50% element overlap for a drop to be possible
+	overlap: 0.5,
 
-board.addEventListener(
-	"drop",
-	function (event) {
-		if (squareChanged) {
-			squareDefault(dragged.parentNode)
-			squareChanged = false
-		}
+	ondragenter: (event) => dropzoneDragEnter(event),
+	ondragleave: (event) => dropzoneDragLeave(event),
+	ondrop: (event) => dropzoneDrop(event),
+})
+
+function dropzoneDragEnter(event) {
+	// add border to hovered square on enter
+	if (
+		event.target !== event.relatedTarget &&
+		event.relatedTarget.className === "draggable-piece" &&
+		event.relatedTarget.src[event.relatedTarget.src.length - 6] ===
+			chess.turn()
+	) {
+		event.target.style.border = "medium solid white"
+	}
+}
+
+function dropzoneDragLeave(event) {
+	// remove border on hovered square on leave
+	if (
+		event.target !== event.relatedTarget &&
+		event.relatedTarget.className === "draggable-piece" &&
+		event.relatedTarget.src[event.relatedTarget.src.length - 6] ===
+			chess.turn()
+	) {
+		event.target.style.border = ""
+	}
+}
+
+function dropzoneDrop(event) {
+	if (
+		event.relatedTarget.src[event.relatedTarget.src.length - 6] ===
+		chess.turn()
+	) {
 		// move dragged elem to the selected drop target
-		if (event.target.getAttribute("draggable") === "true") {
-			onDrop(dragged, event.target.parentNode)
-		} else if (
-			event.target.className === "white-square" ||
-			event.target.className === "black-square" ||
-			event.target.className === "last-move-white" ||
-			event.target.className === "last-move-black"
-		) {
-			onDrop(dragged, event.target)
+		if (event.relatedTarget.className === "draggable-piece") {
+			onDrop(event.relatedTarget, event.target)
 		}
 		event.target.style.border = ""
-	},
-	false
-)
+	}
+}
 
 const whiteModal = document.querySelector("#white-promotion")
 const blackModal = document.querySelector("#black-promotion")
@@ -149,7 +152,8 @@ function onDrop(dragTarget, dropTarget, preview = null) {
 	} else {
 		moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
 	}
-	dragPiece = `${dragTarget.src[dragTarget.src.length - 6]}${
+	// representation of piece
+	let dragPiece = `${dragTarget.src[dragTarget.src.length - 6]}${
 		dragTarget.src[dragTarget.src.length - 5]
 	}`
 	const chessMove = chess.move(moveObject)
@@ -160,8 +164,10 @@ function onDrop(dragTarget, dropTarget, preview = null) {
 			// if en passant
 			onEnPassant(dragTarget, dropTarget)
 		} else if (chessMove.flags === "k" || chessMove.flags === "q") {
+			// if castle
 			onCastle(dragTarget, dropTarget, chessMove.flags)
 		} else if (chessMove.flags.length === 2) {
+			// if promotion on undo
 			onMove(dragTarget, dropTarget)
 			dropTarget.firstChild.src = `pieces/${moveObject.color}${moveObject.promotion}.svg`
 		} else {
@@ -180,12 +186,25 @@ function onDrop(dragTarget, dropTarget, preview = null) {
 			onPromotion(dropTarget.id)
 			promotionMenuRef = (event) =>
 				promotionMenu(event, dragTarget, dropTarget)
-			board.addEventListener("dragstart", promotionDrag, {
-				once: true,
-			})
-			board.addEventListener("click", promotionMenuRef, {
-				once: true,
-			})
+			if (clickedSquare) {
+				// if piece was moved from click
+				board.addEventListener("mousedown", promotionMenuRef, {
+					once: true,
+				})
+			} else {
+				// if piece was moved from drag
+				board.addEventListener(
+					"mouseup",
+					() => {
+						board.addEventListener("mousedown", promotionMenuRef, {
+							once: true,
+						})
+					},
+					{
+						once: true,
+					}
+				)
+			}
 		}
 	}
 }
@@ -201,7 +220,7 @@ function onMove(dragTarget, dropTarget) {
 function onEnPassant(dragTarget, dropTarget) {
 	let targetPawn
 	// check color
-	if (dragPiece[0] === "w") {
+	if (chess.turn() === "b") {
 		targetPawn = `#${dropTarget.id[0]}${Number(dropTarget.id[1]) - 1}`
 	} else {
 		targetPawn = `#${dropTarget.id[0]}${Number(dropTarget.id[1]) + 1}`
@@ -215,7 +234,7 @@ function onEnPassant(dragTarget, dropTarget) {
 function onCastle(dragTarget, dropTarget, flag) {
 	let rookInitSquare
 	let rookFinalSquare
-	if (dragPiece[0] === "w") {
+	if (chess.turn() === "b") {
 		// castle for white
 		if (flag === "k") {
 			// castle for king side
@@ -244,7 +263,7 @@ function onCastle(dragTarget, dropTarget, flag) {
 
 function onPromotion(dropTarget) {
 	// open promotion interface based on color
-	if (dragPiece[0] === "w") {
+	if (chess.turn() === "w") {
 		whiteModal.style.display = "grid"
 		const promotionSquare = document.querySelector(`#${dropTarget}`)
 		promotionSquare.appendChild(whiteModal)
@@ -260,7 +279,7 @@ function promotionMenu(event, dragTarget, dropTarget) {
 	const moveObject = { from: dragTarget.parentNode.id, to: dropTarget.id }
 	board.removeEventListener("dragstart", promotionDrag)
 	// if white promote
-	if (dragPiece[0] === "w") {
+	if (whiteModal.style.display === "grid") {
 		// remove promotion menu
 		whiteModal.parentNode.removeChild(whiteModal)
 		whiteModal.style.display = "none"
@@ -271,12 +290,12 @@ function promotionMenu(event, dragTarget, dropTarget) {
 			// obtain promotion piece from click
 			moveObject.promotion = event.target.src[event.target.src.length - 5]
 			chess.move(moveObject)
-			dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
+			dragTarget.src = `pieces/w${moveObject.promotion}.svg`
 			onValidMove(dragTarget.parentNode, dropTarget)
 			onMove(dragTarget, dropTarget)
 		}
 		// if black promote
-	} else {
+	} else if (blackModal.style.display === "grid") {
 		// remove promotion menu
 		blackModal.parentNode.removeChild(blackModal)
 		blackModal.style.display = "none"
@@ -287,7 +306,7 @@ function promotionMenu(event, dragTarget, dropTarget) {
 			// obtain promotion piece from click
 			moveObject.promotion = event.target.src[event.target.src.length - 5]
 			chess.move(moveObject)
-			dragTarget.src = `pieces/${dragPiece[0]}${moveObject.promotion}.svg`
+			dragTarget.src = `pieces/b${moveObject.promotion}.svg`
 			onValidMove(dragTarget.parentNode, dropTarget)
 			onMove(dragTarget, dropTarget)
 		}
@@ -305,33 +324,42 @@ function promotionDrag() {
 		blackModal.style.display = "none"
 	}
 }
+board.addEventListener("mouseup", onPieceClick)
 
-board.addEventListener("click", (event) => {
-	if (!clickedSquare) {
+function onPieceClick(event) {
+	if (
+		!clickedSquare &&
+		event.target.className === "draggable-piece" &&
+		event.target.src[event.target.src.length - 6] === chess.turn()
+	) {
+		// if first click set square as first click
 		squareChanged = lastMove(event.target.parentNode)
 		if (squareChanged) {
 			clickedSquare = event.target
 		}
-	} else {
-		if (squareChanged) {
-			squareDefault(clickedSquare.parentNode)
-			squareChanged = false
-		}
-		if (event.target.getAttribute("draggable") === "true") {
+	} else if (clickedSquare) {
+		// if second click check if move is valid
+		squareDefault(clickedSquare.parentNode)
+		squareChanged = false
+		if (event.target.className === "draggable-piece") {
 			onDrop(clickedSquare, event.target.parentNode)
 		} else {
 			onDrop(clickedSquare, event.target)
 		}
 		clickedSquare = null
 	}
-})
-
+}
 function squareDefault(optionalSquare = null) {
+	// change specified highlighted square to regular square
 	if (optionalSquare && optionalSquare.className === "last-move-white") {
 		optionalSquare.setAttribute("class", "white-square")
-	} else if (optionalSquare) {
+	} else if (
+		optionalSquare &&
+		optionalSquare.className === "last-move-black"
+	) {
 		optionalSquare.setAttribute("class", "black-square")
-	} else {
+	} else if (!optionalSquare) {
+		// change all highlighted square to regular square
 		const lastMoveWhite = document.getElementsByClassName("last-move-white")
 		const lastMoveBlack = document.getElementsByClassName("last-move-black")
 		for (let i = 0; i < lastMoveWhite.length; ) {
@@ -344,6 +372,7 @@ function squareDefault(optionalSquare = null) {
 }
 
 function lastMove(dragTarget, dropTarget = null) {
+	// change regular square to highlighed square
 	let changed = false
 	if (dragTarget.className === "white-square") {
 		dragTarget.setAttribute("class", "last-move-white")
@@ -352,12 +381,15 @@ function lastMove(dragTarget, dropTarget = null) {
 		dragTarget.setAttribute("class", "last-move-black")
 		changed = true
 	}
-	if (dropTarget && dropTarget.className === "white-square") {
-		dropTarget.setAttribute("class", "last-move-white")
-		changed = true
-	} else if (dropTarget) {
-		dropTarget.setAttribute("class", "last-move-black")
-		changed = true
+	if (dropTarget) {
+		// chenge optional square to highlighed square
+		if (dropTarget.className === "white-square") {
+			dropTarget.setAttribute("class", "last-move-white")
+			changed = true
+		} else {
+			dropTarget.setAttribute("class", "last-move-black")
+			changed = true
+		}
 	}
 	return changed
 }
@@ -365,23 +397,28 @@ function lastMove(dragTarget, dropTarget = null) {
 const resetButton = document.querySelector(".reset-button")
 resetButton.addEventListener("click", playAgain)
 function playAgain() {
-	allSquares = board.children
+	const allSquares = board.children
+	// clear board
 	for (let i = 0; i < allSquares.length; i++) {
 		if (allSquares[i].firstChild) {
 			allSquares[i].removeChild(allSquares[i].firstChild)
 		}
 	}
+	// reset game
 	squareDefault()
 	chess.reset()
 	populateBoard()
+	// remove moves from moves display
 	while (movesDisplay.children.length > 1) {
 		movesDisplay.removeChild(movesDisplay.lastChild)
 	}
 	gameOverModal.style.display = "none"
+	undoneMoves = []
 }
 
 const gameOverModal = document.querySelector(".game-over")
 function gameOver() {
+	// check if game is over
 	if (
 		chess.in_checkmate() ||
 		chess.in_draw() ||
@@ -389,6 +426,8 @@ function gameOver() {
 		chess.in_threefold_repetition()
 	) {
 		gameOverModal.style.display = "block"
+	} else {
+		gameOverModal.style.display = "none"
 	}
 }
 
@@ -396,22 +435,26 @@ const movesDisplay = document.querySelector(".moves")
 function updateTurnDisplay() {
 	const movesLength = chess.history().length
 	if (movesLength > 1) {
+		// select last move
 		movesDisplay.querySelector("#clicked-turn").removeAttribute("id")
 	}
 	let whiteTurn
 	if (movesLength === 1) {
+		// if first move
 		whiteTurn = document.createElement("div")
 		whiteTurn.className = "white-turn"
 		whiteTurn.textContent = chess.history()[movesLength - 1]
 		whiteTurn.setAttribute("id", "clicked-turn")
 		movesDisplay.appendChild(whiteTurn)
 	} else if (movesLength % 2 === 0) {
+		// if black move
 		const blackTurn = document.createElement("div")
 		blackTurn.className = "black-turn"
 		blackTurn.textContent = chess.history()[movesLength - 1]
 		blackTurn.setAttribute("id", "clicked-turn")
 		movesDisplay.appendChild(blackTurn)
 	} else {
+		// if white move
 		const turnNumber = document.createElement("div")
 		turnNumber.textContent = Math.ceil(movesLength / 2)
 		turnNumber.className = "turn-number"
@@ -424,6 +467,7 @@ function updateTurnDisplay() {
 	}
 }
 function onValidMove(dragTarget, dropTarget, preview = null) {
+	// if a valid move is done
 	squareDefault()
 	lastMove(dragTarget, dropTarget)
 	if (!preview) {
@@ -433,12 +477,37 @@ function onValidMove(dragTarget, dropTarget, preview = null) {
 }
 
 const undoButton = document.querySelector(".undo-button")
-undoButton.addEventListener("click", () => undoMove())
+undoButton.addEventListener("click", () => undoButtonClick())
+
+function undoButtonClick() {
+	if (undoneMoves.length > 0) {
+		// if during move preview
+		let lastMove
+		let moveFrom
+		let moveTo
+		while (undoneMoves.length > 1) {
+			lastMove = undoneMoves.pop()
+			moveFrom = lastMove.from
+			moveTo = lastMove.to
+			moveFrom = board.querySelector(`#${moveFrom}`)
+			moveTo = board.querySelector(`#${moveTo}`)
+			onDrop(moveFrom.firstChild, moveTo, lastMove)
+		}
+		undoneMoves.pop()
+		gameOverModal.style.display = "none"
+		movesDisplay.querySelector("#clicked-turn").removeAttribute("id")
+		undoTurnDisplay(chess.history().length)
+	} else {
+		undoMove()
+	}
+	gameOver()
+}
 
 function undoMove(preview = false) {
 	const color = chess.turn()
 	const moveToUndo = chess.undo()
 	if (moveToUndo) {
+		// if valid undo
 		promotionDrag()
 		squareDefault()
 		const undoTo = board.querySelector(`#${moveToUndo.to}`)
@@ -459,19 +528,21 @@ function undoMove(preview = false) {
 	}
 }
 function undoCapture(moveToUndo, undoTo, color) {
-	piece = `pieces/${color}${moveToUndo.captured}.svg`
-	img = document.createElement("img")
+	const piece = `pieces/${color}${moveToUndo.captured}.svg`
+	const img = document.createElement("img")
+	// place captured piece on board
 	img.src = piece
-	img.setAttribute("draggable", "true")
+	img.setAttribute("class", "draggable-piece")
 	undoTo.appendChild(img)
 }
 
 function undoEnPassant(moveToUndo, color) {
 	let coordinates
-	piece = `pieces/${color}${moveToUndo.captured}.svg`
-	img = document.createElement("img")
+	const piece = `pieces/${color}${moveToUndo.captured}.svg`
+	const img = document.createElement("img")
+	// place captured pawn on board
 	img.src = piece
-	img.setAttribute("draggable", "true")
+	img.setAttribute("class", "draggable-piece")
 	if (color === "b") {
 		coordinates = `${moveToUndo.to[0]}${Number(moveToUndo.to[1]) - 1}`
 	} else {
@@ -482,12 +553,14 @@ function undoEnPassant(moveToUndo, color) {
 }
 
 function undoPromotion(undoFrom) {
+	// change source of pice to pawn
 	undoFrom.firstChild.src = `pieces/${chess.turn()}p.svg`
 }
 
 function undoCastle(flag, moveToUndo) {
 	let rookInitSquare
 	let rookFinalSquare
+	// undo rook move in castle
 	if (moveToUndo.color === "w") {
 		// castle for white
 		if (flag === "k") {
@@ -515,6 +588,7 @@ function undoCastle(flag, moveToUndo) {
 }
 
 function onUndo(undoTo, undoFrom, preview) {
+	// moves back user moved piece
 	undoFrom.appendChild(undoTo.firstChild)
 	const allMoves = chess.history({ verbose: true })
 	if (allMoves.length > 0) {
@@ -529,6 +603,7 @@ function onUndo(undoTo, undoFrom, preview) {
 }
 
 function undoTurnDisplay(numberofMoves) {
+	// removes move from moves display
 	if (numberofMoves % 2 === 0 && movesDisplay.children.length !== 2) {
 		movesDisplay.removeChild(movesDisplay.lastChild)
 	}
@@ -537,9 +612,10 @@ function undoTurnDisplay(numberofMoves) {
 		movesDisplay.lastChild.setAttribute("id", "clicked-turn")
 	}
 }
-movesDisplay.addEventListener("click", (event) => previousMovePreview(event))
+movesDisplay.addEventListener("click", previousMovePreview)
 let undoneMoves = []
 function previousMovePreview(event) {
+	// move to selected move in turn display
 	if (
 		event.target.className === "black-turn" ||
 		event.target.className === "white-turn"
@@ -563,18 +639,14 @@ function previousMovePreview(event) {
 		if (moveNumber > moveHistoryVerbose.length - 1) {
 			let moveFrom
 			let moveTo
-			let lastMove
-			while (
-				moveHistoryVerbose[moveHistoryVerbose.length - 1].san !==
-				previousMove
-			) {
-				moveFrom = undoneMoves[undoneMoves.length - 1].from
-				moveTo = undoneMoves[undoneMoves.length - 1].to
+			let lastMove = moveHistoryVerbose[moveHistoryVerbose.length - 1]
+			while (lastMove.san !== previousMove) {
+				lastMove = undoneMoves.pop()
+				moveFrom = lastMove.from
+				moveTo = lastMove.to
 				moveFrom = board.querySelector(`#${moveFrom}`)
 				moveTo = board.querySelector(`#${moveTo}`)
-				lastMove = undoneMoves.pop()
 				onDrop(moveFrom.firstChild, moveTo, lastMove)
-				moveHistoryVerbose.push(lastMove) 
 			}
 		} else {
 			while (moveHistoryVerbose.length - 1 > moveNumber) {
@@ -583,7 +655,74 @@ function previousMovePreview(event) {
 			}
 		}
 		if (event.target === movesDisplay.lastChild) {
-			gameOverModal.style.display = "none"
+			gameOver()
 		}
+	}
+}
+// Step 1
+const slider = interact(".slider") // target elements with the "slider" class
+slider.styleCursor(false)
+slider
+	// Step 2
+	.draggable({
+		// make the element fire drag events
+		origin: "self", // (0, 0) will be the element's top-left
+		inertia: true, // start inertial movement if thrown
+		modifiers: [
+			interact.modifiers.restrict({
+				restriction: "self", // keep the drag coords within the element
+			}),
+		],
+		// Step 3
+		listeners: {
+			move(event) {
+				// call this listener on every dragmove
+				const sliderWidth = interact.getElementRect(event.target).width
+				const value = event.pageX / sliderWidth
+				event.target.style.paddingLeft = value * 100 + "%"
+				event.target.setAttribute("data-value", value.toFixed(2))
+			},
+		},
+	})
+const preGameDisplay = document.querySelector(".pre-game")
+const colorButton = document.querySelector(".colors")
+const newGameButton = document.querySelector(".new-game-button")
+const duringGameDisplay = document.querySelector(".during-game")
+const singlePlayer = document.querySelector(".single-player")
+const twoPlayer = document.querySelector(".two-player")
+singlePlayer.addEventListener("click", () => {
+	singlePlayer.style.color = "#8fbcbb"
+	twoPlayer.style.color = "#aaaaaa"
+})
+twoPlayer.addEventListener("click", () => {
+	twoPlayer.style.color = "#8fbcbb"
+	singlePlayer.style.color = "#aaaaaa"
+})
+colorButton.addEventListener("click", (event) => {
+	if (event.target.className === "chess-color") {
+		preGameDisplay.style.display = "none"
+		duringGameDisplay.style.display = "grid"
+		gameOverModal.style.display = "none"
+		const color = event.target.src[event.target.src.length - 6]
+		if (
+			(color === "b" && board.firstElementChild === gameOverModal) ||
+			(color === "w" && board.firstElementChild !== gameOverModal)
+		) {
+			reverseBoard()
+		}
+	}
+})
+newGameButton.addEventListener("click", () => {
+	duringGameDisplay.style.display = "none"
+	preGameDisplay.style.display = "grid"
+	playAgain()
+	gameOverModal.style.display = "block"
+})
+
+function reverseBoard() {
+	const divs = board.children
+	let i = divs.length - 1
+	for (; i--; ) {
+		board.appendChild(divs[i])
 	}
 }
